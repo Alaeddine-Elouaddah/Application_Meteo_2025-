@@ -5,19 +5,12 @@ const UserSchema = new mongoose.Schema({
   username: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  isVerified: { type: Boolean, default: false },
-  verificationToken: { type: String },
-  verificationCode: { type: String }, // Code de vérification envoyé par email
-  resetPasswordToken: { type: String },
-  resetPasswordExpires: { type: Date },
-});
 
-// Hash du mot de passe avant sauvegarde
-UserSchema.pre("save", async function (next) {
-  if (this.isModified("password")) {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
-  next();
+  isVerified: { type: Boolean, default: false },
+  verificationCode: { type: String }, // Code envoyé pour vérifier le compte
+
+  resetCode: { type: String }, // Code envoyé pour réinitialiser le mot de passe
+  resetCodeExpires: { type: Date }, // Expiration du code
 });
 
 module.exports = mongoose.model("User", UserSchema);

@@ -5,6 +5,7 @@ import {
   FaEye,
   FaEyeSlash,
   FaCheckCircle,
+  FaEnvelope,
 } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 import OCPLogo from "../assets/ocp.png";
@@ -13,16 +14,23 @@ import { useNavigate } from "react-router-dom";
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
+    confirmPassword: "",
     email: "",
     verificationCode: "",
+    newPassword: "",
+    confirmNewPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [verificationStep, setVerificationStep] = useState(false);
+  const [forgotPassword, setForgotPassword] = useState(false);
+  const [resetCodeSent, setResetCodeSent] = useState(false);
+  const [newPasswordStep, setNewPasswordStep] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,12 +48,18 @@ const Login = () => {
     setFormData({
       username: "",
       password: "",
+      confirmPassword: "",
       email: "",
       verificationCode: "",
+      newPassword: "",
+      confirmNewPassword: "",
     });
     setError("");
     setSuccessMessage("");
     setVerificationStep(false);
+    setForgotPassword(false);
+    setResetCodeSent(false);
+    setNewPasswordStep(false);
   };
 
   const handleChange = (e) => {
@@ -67,6 +81,18 @@ const Login = () => {
 
     if (!formData.password.trim()) {
       setError("Le mot de passe est obligatoire");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.confirmPassword.trim()) {
+      setError("Veuillez confirmer votre mot de passe");
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Les mots de passe ne correspondent pas");
       setIsLoading(false);
       return;
     }
@@ -177,6 +203,7 @@ const Login = () => {
           ...prev,
           username: "",
           password: "",
+          confirmPassword: "",
           verificationCode: "",
         }));
       }, 2000);
@@ -194,6 +221,7 @@ const Login = () => {
     setIsLoading(true);
     setError("");
 
+    // Validation côté client
     if (!formData.email.trim()) {
       setError("L'adresse email est obligatoire");
       setIsLoading(false);
@@ -213,7 +241,7 @@ const Login = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: formData.email,
+          email: formData.email.toLowerCase().trim(),
           password: formData.password,
         }),
       });
@@ -221,14 +249,15 @@ const Login = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Email ou mot de passe incorrect");
-        }
-        if (data.error) {
-          throw new Error(data.error);
+        if (data.verificationRequired) {
+          setError("Veuillez vérifier votre email avant de vous connecter");
+          setVerificationStep(true);
         } else {
-          throw new Error(data.message || `Erreur ${response.status}`);
+          throw new Error(
+            data.error || data.message || "Email ou mot de passe incorrect"
+          );
         }
+        return;
       }
 
       if (data.token) {
@@ -236,23 +265,218 @@ const Login = () => {
         if (data.user) {
           localStorage.setItem("user", JSON.stringify(data.user));
         }
-        navigate("/");
+        navigate("/dashboard"); // Modification ici - redirection vers /dashboard
       }
+    } catch (err) {
+      console.error("Erreur de connexion:", err);
+      setError(err.message || "Une erreur est survenue lors de la connexion");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    if (!formData.email.trim()) {
+      setError("Veuillez entrer votre adresse email");
+      setIsLoading(false);
+      return;
+    }
+
+    // Validation format email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Veuillez entrer une adresse email valide");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/auth/forgot-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.error) {
+          throw new Error(data.error);
+        } else {
+          throw new Error(data.message || `Erreur ${response.status}`);
+        }
+      }
+
+      setSuccessMessage(
+        "Un code de réinitialisation a été envoyé à votre email."
+      );
+      setResetCodeSent(true);
     } catch (err) {
       if (err.message === "Failed to fetch") {
         setError(
           "Impossible de se connecter au serveur. Vérifiez votre connexion."
         );
       } else {
-        setError(err.message || "Une erreur est survenue lors de la connexion");
+        setError(
+          err.message ||
+            "Une erreur est survenue lors de l'envoi du code de réinitialisation"
+        );
       }
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleVerifyResetCode = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    if (!formData.verificationCode.trim()) {
+      setError("Le code de vérification est obligatoire");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/auth/verify-reset-code",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            code: formData.verificationCode,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.error) {
+          throw new Error(data.error);
+        } else {
+          throw new Error(data.message || `Erreur ${response.status}`);
+        }
+      }
+
+      setSuccessMessage(
+        "Code vérifié. Veuillez entrer votre nouveau mot de passe."
+      );
+      setNewPasswordStep(true);
+    } catch (err) {
+      setError(
+        err.message || "Une erreur est survenue lors de la vérification du code"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    if (!formData.newPassword.trim()) {
+      setError("Le nouveau mot de passe est obligatoire");
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.confirmNewPassword.trim()) {
+      setError("Veuillez confirmer votre nouveau mot de passe");
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.newPassword !== formData.confirmNewPassword) {
+      setError("Les mots de passe ne correspondent pas");
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.newPassword.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/auth/reset-password",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: formData.email,
+            code: formData.verificationCode,
+            newPassword: formData.newPassword,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.error) {
+          throw new Error(data.error);
+        } else {
+          throw new Error(data.message || `Erreur ${response.status}`);
+        }
+      }
+
+      setSuccessMessage("Votre mot de passe a été réinitialisé avec succès !");
+      setTimeout(() => {
+        setForgotPassword(false);
+        setResetCodeSent(false);
+        setNewPasswordStep(false);
+        setFormData((prev) => ({
+          ...prev,
+          email: "",
+          verificationCode: "",
+          newPassword: "",
+          confirmNewPassword: "",
+        }));
+        setIsLogin(true);
+      }, 2000);
+    } catch (err) {
+      setError(
+        err.message ||
+          "Une erreur est survenue lors de la réinitialisation du mot de passe"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = (e) => {
-    if (isLogin) {
+    if (forgotPassword) {
+      if (resetCodeSent) {
+        if (newPasswordStep) {
+          handleResetPassword(e);
+        } else {
+          handleVerifyResetCode(e);
+        }
+      } else {
+        handleForgotPassword(e);
+      }
+    } else if (isLogin) {
       handleLogin(e);
     } else if (verificationStep) {
       handleVerifyCode(e);
@@ -295,8 +519,8 @@ const Login = () => {
           <img src={OCPLogo} alt="OCP Logo" className="h-16 object-contain" />
         </motion.div>
 
-        {/* Switch between login/register - only show when not in verification step */}
-        {!verificationStep && (
+        {/* Switch between login/register - only show when not in verification step or forgot password */}
+        {!verificationStep && !forgotPassword && (
           <motion.div
             variants={itemVariants}
             className="flex justify-center mb-8"
@@ -334,7 +558,13 @@ const Login = () => {
         )}
 
         <h2 className="text-3xl font-bold text-center text-green-600 mb-6">
-          {verificationStep
+          {forgotPassword
+            ? resetCodeSent
+              ? newPasswordStep
+                ? "Nouveau mot de passe"
+                : "Vérification du code"
+              : "Mot de passe oublié"
+            : verificationStep
             ? "Vérification du compte"
             : isLogin
             ? "Bienvenue"
@@ -342,7 +572,114 @@ const Login = () => {
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {verificationStep ? (
+          {forgotPassword ? (
+            <>
+              {newPasswordStep ? (
+                <>
+                  <motion.div variants={itemVariants}>
+                    <div className="relative">
+                      <FaLock className="absolute left-3 top-3 text-gray-400" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        name="newPassword"
+                        placeholder="Nouveau mot de passe"
+                        value={formData.newPassword}
+                        onChange={handleChange}
+                        className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 transition-all pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-green-600"
+                      >
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                  </motion.div>
+
+                  <motion.div variants={itemVariants}>
+                    <div className="relative">
+                      <FaLock className="absolute left-3 top-3 text-gray-400" />
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        name="confirmNewPassword"
+                        placeholder="Confirmer le nouveau mot de passe"
+                        value={formData.confirmNewPassword}
+                        onChange={handleChange}
+                        className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 transition-all pr-10"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        className="absolute right-3 top-3 text-gray-400 hover:text-green-600"
+                      >
+                        {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              ) : resetCodeSent ? (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-center text-gray-600 mb-4"
+                  >
+                    Un code de réinitialisation a été envoyé à{" "}
+                    <span className="font-semibold">{formData.email}</span>.
+                    Veuillez l'entrer ci-dessous.
+                  </motion.div>
+
+                  <motion.div variants={itemVariants}>
+                    <div className="relative">
+                      <FaCheckCircle className="absolute left-3 top-3 text-gray-400" />
+                      <input
+                        type="text"
+                        name="verificationCode"
+                        placeholder="Code de vérification"
+                        value={formData.verificationCode}
+                        onChange={handleChange}
+                        className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 transition-all"
+                        required
+                      />
+                    </div>
+                  </motion.div>
+                </>
+              ) : (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="text-center text-gray-600 mb-4"
+                  >
+                    Entrez votre adresse email pour recevoir un code de
+                    réinitialisation de mot de passe.
+                  </motion.div>
+
+                  <motion.div variants={itemVariants}>
+                    <div className="relative">
+                      <FaEnvelope className="absolute left-3 top-3 text-gray-400" />
+                      <input
+                        type="email"
+                        name="email"
+                        placeholder="Adresse Email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 transition-all"
+                        required
+                      />
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </>
+          ) : verificationStep ? (
             <>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -413,39 +750,110 @@ const Login = () => {
                 </div>
               </motion.div>
 
-              <motion.div variants={itemVariants}>
-                <div className="relative">
-                  <FaLock className="absolute left-3 top-3 text-gray-400" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    placeholder="Mot de passe"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 transition-all pr-10"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-green-600"
-                  >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
-                </div>
-              </motion.div>
+              {!isLogin && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="relative">
+                    <FaLock className="absolute left-3 top-3 text-gray-400" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      placeholder="Mot de passe"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 transition-all pr-10"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-green-600"
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {!isLogin && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="relative">
+                    <FaLock className="absolute left-3 top-3 text-gray-400" />
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      placeholder="Confirmer le mot de passe"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 transition-all pr-10"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-3 top-3 text-gray-400 hover:text-green-600"
+                    >
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {isLogin && (
+                <motion.div variants={itemVariants}>
+                  <div className="relative">
+                    <FaLock className="absolute left-3 top-3 text-gray-400" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      placeholder="Mot de passe"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-200 transition-all pr-10"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-gray-400 hover:text-green-600"
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
 
               {isLogin && (
                 <motion.div
                   variants={itemVariants}
-                  className="flex justify-end"
+                  className="flex justify-between"
                 >
-                  <a
-                    href="#"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotPassword(true);
+                      setFormData({
+                        ...formData,
+                        password: "",
+                      });
+                    }}
                     className="text-sm text-green-600 hover:underline"
                   >
                     Mot de passe oublié ?
-                  </a>
+                  </button>
                 </motion.div>
               )}
             </>
@@ -480,6 +888,16 @@ const Login = () => {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
               </svg>
+            ) : forgotPassword ? (
+              resetCodeSent ? (
+                newPasswordStep ? (
+                  "Réinitialiser le mot de passe"
+                ) : (
+                  "Vérifier le code"
+                )
+              ) : (
+                "Envoyer le code de réinitialisation"
+              )
             ) : verificationStep ? (
               "Vérifier le code"
             ) : isLogin ? (
@@ -520,7 +938,7 @@ const Login = () => {
             )}
           </AnimatePresence>
 
-          {!verificationStep && (
+          {!verificationStep && !forgotPassword && (
             <motion.div
               variants={itemVariants}
               className="mt-6 text-center text-sm text-gray-500"
@@ -535,7 +953,7 @@ const Login = () => {
             </motion.div>
           )}
 
-          {verificationStep && (
+          {(verificationStep || forgotPassword) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -543,10 +961,28 @@ const Login = () => {
               className="mt-6 text-center text-sm text-gray-500"
             >
               <button
-                onClick={() => setVerificationStep(false)}
+                onClick={() => {
+                  if (forgotPassword) {
+                    if (newPasswordStep) {
+                      setNewPasswordStep(false);
+                    } else if (resetCodeSent) {
+                      setResetCodeSent(false);
+                    } else {
+                      setForgotPassword(false);
+                    }
+                  } else {
+                    setVerificationStep(false);
+                  }
+                }}
                 className="text-green-600 font-medium hover:text-green-800 hover:underline focus:outline-none transition-colors"
               >
-                Retour à l'inscription
+                {forgotPassword
+                  ? newPasswordStep
+                    ? "Retour à la vérification"
+                    : resetCodeSent
+                    ? "Retour"
+                    : "Retour à la connexion"
+                  : "Retour à l'inscription"}
               </button>
             </motion.div>
           )}

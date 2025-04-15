@@ -2,13 +2,10 @@ const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController"); // Assure-toi que le bon chemin est utilisé
 
-// Route pour l'enregistrement
 router.post("/register", authController.register);
-
-// Route pour la vérification de l'email
-router.post("/verify-code", authController.verifyCode); // Assurez-vous que la méthode est bien définie dans le controller
-
-// Route pour la connexion
+router.post("/verify-code", authController.verifyCode);
 router.post("/login", authController.login);
-
+router.post("/forgot-password", authController.forgotPassword);
+router.post("/verify-reset-code", authController.verifyResetCode);
+router.post("/reset-password", authController.resetPassword);
 module.exports = router;
