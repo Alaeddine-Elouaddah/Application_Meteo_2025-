@@ -1,41 +1,89 @@
-require("dotenv").config(); // Charger les variables d'environnement en premier
+require("dotenv").config();
 
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const { logRequests, errorHandler } = require("./middlewares/middlewares");
 
-const authRoutes = require("./routes/authRoutes"); // Assure-toi que ce fichier existe
+// Routes
+const authRoutes = require("./routes/authRoutes");
+const contactRoutes = require("./routes/contactRoutes");
+
+// Initialisation de l'application
 const app = express();
 
+// Configuration de la limite de taux
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limite chaque IP à 100 requêtes par fenêtre
+});
+
 // Middlewares
-app.use(cors());
+app.use(helmet());
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN || "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+app.use(limiter);
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(logRequests);
+
+// Headers par défaut
 app.use((req, res, next) => {
   res.setHeader("Content-Type", "application/json");
+  res.setHeader("X-Powered-By", "Your App Name");
   next();
 });
 
 // Connexion à MongoDB
-const dbURI = process.env.DB_URI;
-if (!dbURI) {
-  console.error("❌ DB_URI est manquant dans le fichier .env");
-  process.exit(1);
-}
+const connectDB = async () => {
+  try {
+    if (!process.env.DB_URI) {
+      throw new Error("❌ DB_URI est manquant dans le fichier .env");
+    }
 
-mongoose
-  .connect(dbURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
+    await mongoose.connect(process.env.DB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+    });
     console.log("✅ MongoDB connecté");
-    // Démarrage du serveur une fois connecté à la base
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () =>
-      console.log(`🚀 Serveur démarré sur le port ${PORT}`)
-    );
-  })
-  .catch((err) => console.error("❌ Erreur de connexion à MongoDB:", err));
+  } catch (err) {
+    console.error("❌ Erreur de connexion à MongoDB:", err.message);
+    process.exit(1);
+  }
+};
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/contact", contactRoutes);
+
+// Route de test
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "OK", timestamp: new Date() });
+});
+
+// Gestion des erreurs
+app.use((req, res, next) => {
+  res.status(404).json({ error: "Endpoint non trouvé" });
+});
+
+app.use(errorHandler);
+
+// Démarrage du serveur
+const startServer = async () => {
+  await connectDB();
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Serveur démarré sur le port ${PORT}`);
+    console.log(`📡 Environnement: ${process.env.NODE_ENV || "development"}`);
+  });
+};
+
+startServer();

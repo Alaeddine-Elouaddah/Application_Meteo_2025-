@@ -265,7 +265,7 @@ const Login = () => {
         if (data.user) {
           localStorage.setItem("user", JSON.stringify(data.user));
         }
-        navigate("/dashboard"); // Modification ici - redirection vers /dashboard
+        navigate("/Admin"); // Modification ici - redirection vers /dashboard
       }
     } catch (err) {
       console.error("Erreur de connexion:", err);

@@ -6,11 +6,17 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 
-  isVerified: { type: Boolean, default: false },
-  verificationCode: { type: String }, // Code envoyé pour vérifier le compte
+  // Rôles spécifiques à ton application
+  role: {
+    type: String,
+    enum: ["admin", "collaborateur", "stagiaire"], // Tes rôles personnalisés
+    default: "stagiaire", // Valeur par défaut
+  },
 
-  resetCode: { type: String }, // Code envoyé pour réinitialiser le mot de passe
-  resetCodeExpires: { type: Date }, // Expiration du code
+  isVerified: { type: Boolean, default: false },
+  verificationCode: { type: String },
+  resetCode: { type: String },
+  resetCodeExpires: { type: Date },
 });
 
 module.exports = mongoose.model("User", UserSchema);
