@@ -154,7 +154,9 @@ const HomePage = () => {
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           >
             <img src={OCPLogo} alt="Logo" className="h-10" />
-            <span className="text-2xl font-bold text-gray-800">CollabPro</span>
+            <span className="text-2xl font-bold text-gray-800">
+              OCP Plateforme
+            </span>
           </motion.div>
 
           {/* Desktop Navigation */}
@@ -254,7 +256,7 @@ const HomePage = () => {
                 transition={{ delay: 0.2, duration: 0.8 }}
               >
                 Boostez votre productivité avec notre{" "}
-                <span className="text-blue-600">plateforme collaborative</span>
+                <span className="text-blue-600">plateforme OCP</span>
               </motion.h1>
 
               <motion.p
@@ -280,15 +282,6 @@ const HomePage = () => {
                   whileTap={{ scale: 0.98 }}
                 >
                   Créer un compte <FaArrowRight className="ml-2" />
-                </motion.button>
-
-                <motion.button
-                  onClick={() => navigate("/demo")}
-                  className="border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-lg font-medium hover:bg-blue-50 transition-colors"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Voir la démo
                 </motion.button>
               </motion.div>
             </motion.div>
@@ -352,42 +345,145 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="py-20 bg-blue-600 text-white">
+      {/* Solutions Section */}
+      <section id="solutions" className="py-20 bg-gray-50">
         <div className="container mx-auto px-6">
           <motion.div
-            className="text-center mb-16"
+            className="text-center mb-20"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-3xl font-bold mb-4">Témoignages</h2>
-            <p className="text-blue-100 max-w-2xl mx-auto">
-              Découvrez ce que nos clients pensent de notre solution
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Nos Solutions
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Des solutions adaptées à tous vos besoins professionnels
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.2 }}
-              >
-                <div className="bg-white bg-opacity-10 p-8 rounded-xl backdrop-blur-sm">
-                  <p className="text-lg mb-6">"{testimonial.quote}"</p>
-                  <p className="font-medium text-blue-100">
-                    {testimonial.author}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all h-full">
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  Gestion de Projets
+                </h3>
+                <p className="text-gray-600">
+                  Planification, suivi et exécution de tous vos projets en un
+                  seul endroit.
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all h-full">
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  Collaboration d'Équipe
+                </h3>
+                <p className="text-gray-600">
+                  Outils de communication et de partage pour une collaboration
+                  optimale.
+                </p>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+            >
+              <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all h-full">
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  Reporting Analytique
+                </h3>
+                <p className="text-gray-600">
+                  Tableaux de bord et analyses pour suivre vos performances.
+                </p>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
+
+      {/* About Section */}
+      <section id="about" className="py-20 bg-white">
+        <div className="container mx-auto px-6">
+          <motion.div
+            className="text-center mb-20"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              À propos de nous
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Découvrez qui nous sommes et notre mission
+            </p>
+          </motion.div>
+
+          <div className="flex flex-col lg:flex-row gap-12 items-center">
+            <motion.div
+              className="lg:w-1/2"
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="rounded-xl overflow-hidden shadow-xl">
+                <img
+                  src="https://images.unsplash.com/photo-1552664730-d307ca884978"
+                  alt="Équipe OCP travaillant ensemble"
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="lg:w-1/2"
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+                Notre Mission
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Nous nous engageons à fournir des solutions logicielles
+                innovantes qui transforment la façon dont les équipes
+                travaillent ensemble. Notre plateforme est conçue pour
+                simplifier la collaboration et augmenter la productivité.
+              </p>
+
+              <h3 className="text-2xl font-semibold text-gray-900 mb-4">
+                Notre Vision
+              </h3>
+              <p className="text-gray-600">
+                Devenir le leader des solutions de collaboration d'équipe en
+                offrant une expérience utilisateur exceptionnelle et des
+                fonctionnalités puissantes adaptées aux besoins des entreprises
+                modernes.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
 
       {/* Contact Section */}
       <section id="contact" className="py-20 bg-white">
@@ -428,7 +524,7 @@ const HomePage = () => {
                     </div>
                     <div>
                       <h4 className="font-medium text-gray-900">Email</h4>
-                      <p className="text-gray-600">contact@collabpro.com</p>
+                      <p className="text-gray-600">contact@ocp.com</p>
                     </div>
                   </div>
 
@@ -636,15 +732,14 @@ const HomePage = () => {
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <FooterSection
-              title="CollabPro"
-              content="La solution ultime pour la collaboration d'équipe et la gestion de projets."
+              title="OCP Plateforme"
+              content="La solution professionnelle pour la gestion de vos projets et la collaboration d'équipe."
             />
             <FooterLinks
               title="Produit"
               links={[
                 { name: "Fonctionnalités", href: "#features" },
                 { name: "Solutions", href: "#solutions" },
-                { name: "Démonstration", href: "#demo" },
                 { name: "Nouveautés", href: "#updates" },
               ]}
             />
@@ -652,8 +747,6 @@ const HomePage = () => {
               title="Ressources"
               links={[
                 { name: "Documentation", href: "#docs" },
-                { name: "Blog", href: "#blog" },
-                { name: "Tutoriels", href: "#tutorials" },
                 { name: "FAQ", href: "#faq" },
               ]}
             />
@@ -661,34 +754,14 @@ const HomePage = () => {
               title="Entreprise"
               links={[
                 { name: "À propos", href: "#about" },
-                { name: "Équipe", href: "#team" },
                 { name: "Contact", href: "#contact" },
-                { name: "Carrières", href: "#careers" },
               ]}
             />
           </div>
           <div className="border-t border-gray-700 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p>© {new Date().getFullYear()} CollabPro. Tous droits réservés.</p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <a
-                href="#terms"
-                className="hover:text-blue-400 transition-colors"
-              >
-                Conditions
-              </a>
-              <a
-                href="#privacy"
-                className="hover:text-blue-400 transition-colors"
-              >
-                Confidentialité
-              </a>
-              <a
-                href="#cookies"
-                className="hover:text-blue-400 transition-colors"
-              >
-                Cookies
-              </a>
-            </div>
+            <p>
+              © {new Date().getFullYear()} OCP Plateforme. Tous droits réservés.
+            </p>
           </div>
         </div>
       </footer>
