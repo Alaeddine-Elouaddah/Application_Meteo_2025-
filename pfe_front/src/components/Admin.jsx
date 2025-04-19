@@ -1,124 +1,234 @@
+// src/App.jsx
 import React from "react";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+// Enregistrer les composants nécessaires pour Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+// Données pour les graphiques
+const activityData = {
+  labels: ["Jan", "Fév", "Mars", "Avr", "Mai"],
+  datasets: [
+    {
+      label: "Admins",
+      data: [10, 15, 20, 12, 21],
+      backgroundColor: "#34D399",
+    },
+    {
+      label: "Collaborateurs",
+      data: [5, 8, 15, 10, 8],
+      backgroundColor: "#FBBF24",
+    },
+    {
+      label: "Stagiaires",
+      data: [3, 5, 10, 7, 5],
+      backgroundColor: "#F87171",
+    },
+  ],
+};
+
+const projectStatusData = {
+  labels: ["En cours", "Terminés", "En retard"],
+  datasets: [
+    {
+      label: "Projets",
+      data: [8, 5, 2],
+      backgroundColor: "#34D399",
+    },
+  ],
+};
 
 const Admin = () => {
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">
-          Tableau de Bord Admin
-        </h1>
-        <p className="text-gray-600 mb-8">
-          Vue d'ensemble des utilisateurs, projets et activités sur la
-          plateforme.
-        </p>
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <div className="w-64 bg-white shadow-md">
+        <div className="p-4">
+          <h1 className="text-lg font-bold">CCP Collab Nexus</h1>
+        </div>
+        <nav className="mt-4">
+          <a href="#" className="block p-4 text-blue-600 bg-blue-50">
+            Tableau de bord
+          </a>
+          <a href="#" className="block p-4">
+            Utilisateurs
+          </a>
+          <a href="#" className="block p-4">
+            Projets
+          </a>
+          <a href="#" className="block p-4">
+            Équipes
+          </a>
+          <a href="#" className="block p-4">
+            Paramètres
+          </a>
+        </nav>
+        <div className="p-4 mt-auto">
+          <button className="w-full p-2 text-white bg-red-500 rounded">
+            Déconnexion
+          </button>
+        </div>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Utilisateurs total */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              Utilisateurs total
-            </h2>
-            <p className="text-3xl font-bold text-gray-800 mb-2">24</p>
-            <p className="text-sm text-gray-500">↑ 12% 24 actifs ce mois</p>
+      {/* Main Content */}
+      <div className="flex-1 p-6">
+        <h1 className="text-2xl font-bold mb-6">Tableau de Bord Admin</h1>
+
+        {/* Statistiques */}
+        <div className="grid grid-cols-5 gap-4 mb-6">
+          <div className="p-4 bg-white rounded shadow">
+            <h2 className="text-sm text-gray-500">Utilisateurs totaux</h2>
+            <p className="text-2xl font-bold">24</p>
+            <p className="text-sm text-green-500">+24% ce mois</p>
           </div>
-
-          {/* Projets actifs */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              Projets actifs
-            </h2>
-            <p className="text-3xl font-bold text-gray-800 mb-2">8</p>
-            <p className="text-sm text-gray-500">↑ 20% 3 nouveaux ce mois</p>
+          <div className="p-4 bg-white rounded shadow">
+            <h2 className="text-sm text-gray-500">Projets</h2>
+            <p className="text-2xl font-bold">8</p>
+            <p className="text-sm text-red-500">+20% ce mois</p>
           </div>
-
-          {/* Tâches complétées */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              Tâches complétées
-            </h2>
-            <p className="text-3xl font-bold text-gray-800 mb-2">47</p>
-            <p className="text-sm text-gray-500">↑ 8% Ce mois</p>
+          <div className="p-4 bg-white rounded shadow">
+            <h2 className="text-sm text-gray-500">Tâches complètes</h2>
+            <p className="text-2xl font-bold">47</p>
+            <p className="text-sm text-green-500">+1% ce mois</p>
           </div>
-
-          {/* Tâches en attente */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              Tâches en attente
-            </h2>
-            <p className="text-3xl font-bold text-gray-800 mb-2">35</p>
-            <p className="text-sm text-gray-500">15 urgents</p>
+          <div className="p-4 bg-white rounded shadow">
+            <h2 className="text-sm text-gray-500">Tâches en attente</h2>
+            <p className="text-2xl font-bold">35</p>
+            <p className="text-sm text-red-500">+15% ce mois</p>
           </div>
-
-          {/* Documents partagés */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              Documents partagés
-            </h2>
-            <p className="text-3xl font-bold text-gray-800 mb-2">128</p>
-            <p className="text-sm text-gray-500">↑ 15% Ce mois</p>
-          </div>
-
-          {/* Messages échangés */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">
-              Messages échangés
-            </h2>
-            <p className="text-3xl font-bold text-gray-800 mb-2">1543</p>
-            <p className="text-sm text-gray-500">↑ 24% Ce mois</p>
+          <div className="p-4 bg-white rounded shadow">
+            <h2 className="text-sm text-gray-500">Messages échangés</h2>
+            <p className="text-2xl font-bold">15843</p>
+            <p className="text-sm text-green-500">+12% ce mois</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Activité des utilisateurs par mois */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">
+        {/* Graphiques */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="p-4 bg-white rounded shadow">
+            <h2 className="text-lg font-semibold mb-4">
               Activité des utilisateurs par mois
             </h2>
-            <div className="flex items-end space-x-2 h-40">
-              <div className="flex flex-col items-center">
+            <Bar data={activityData} />
+          </div>
+          <div className="p-4 bg-white rounded shadow">
+            <h2 className="text-lg font-semibold mb-4">État des projets</h2>
+            <Bar data={projectStatusData} />
+          </div>
+        </div>
+
+        {/* Activités et Projets */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="p-4 bg-white rounded shadow">
+            <h2 className="text-lg font-semibold mb-4">Projets récents</h2>
+            <div className="mb-4">
+              <h3 className="font-medium">
+                Optimisation des processus d'extraction
+              </h3>
+              <p className="text-sm text-gray-500">
+                Projet visant à améliorer l'efficacité...
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
                 <div
-                  className="w-8 bg-blue-500 rounded-t"
-                  style={{ height: "28px" }}
+                  className="bg-blue-600 h-2.5 rounded-full"
+                  style={{ width: "75%" }}
                 ></div>
-                <span className="text-xs text-gray-500 mt-1">28</span>
               </div>
-              <div className="flex flex-col items-center">
+              <p className="text-sm text-gray-500 mt-1">75%</p>
+            </div>
+            <div>
+              <h3 className="font-medium">Digitalisation des rapports de...</h3>
+              <p className="text-sm text-gray-500">
+                Mise en place d'un système...
+              </p>
+              <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
                 <div
-                  className="w-8 bg-blue-400 rounded-t"
-                  style={{ height: "21px" }}
+                  className="bg-blue-600 h-2.5 rounded-full"
+                  style={{ width: "30%" }}
                 ></div>
-                <span className="text-xs text-gray-500 mt-1">21</span>
               </div>
-              <div className="flex flex-col items-center">
-                <div
-                  className="w-8 bg-blue-300 rounded-t"
-                  style={{ height: "14px" }}
-                ></div>
-                <span className="text-xs text-gray-500 mt-1">14</span>
-              </div>
+              <p className="text-sm text-gray-500 mt-1">30%</p>
             </div>
           </div>
-
-          {/* État des projets */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">
-              État des projets
+          <div className="p-4 bg-white rounded shadow">
+            <h2 className="text-lg font-semibold mb-4">
+              Système de surveillance
             </h2>
-            <ul className="space-y-3">
-              <li className="flex items-center">
-                <span className="w-3 h-3 bg-yellow-400 rounded-full mr-2"></span>
-                <span className="text-gray-700">En attente</span>
-              </li>
-              <li className="flex items-center">
-                <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                <span className="text-gray-700">En cours</span>
-              </li>
-              <li className="flex items-center">
-                <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                <span className="text-gray-700">Terminés</span>
-              </li>
-            </ul>
+            <p className="text-sm text-gray-500">
+              Mise en place d'un système de surveillance...
+            </p>
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+              <div
+                className="bg-yellow-400 h-2.5 rounded-full"
+                style={{ width: "45%" }}
+              ></div>
+            </div>
+            <p className="text-sm text-gray-500 mt-1">45%</p>
+          </div>
+          <div className="p-4 bg-white rounded shadow">
+            <h2 className="text-lg font-semibold mb-4">Activités récentes</h2>
+            <div className="space-y-4">
+              <div className="flex items-center">
+                <img
+                  src="https://via.placeholder.com/40"
+                  alt="user"
+                  className="w-10 h-10 rounded-full mr-3"
+                />
+                <div>
+                  <p className="text-sm">Fatima Zahra a modifié...</p>
+                  <p className="text-xs text-gray-500">Il y a 10 min</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <img
+                  src="https://via.placeholder.com/40"
+                  alt="user"
+                  className="w-10 h-10 rounded-full mr-3"
+                />
+                <div>
+                  <p className="text-sm">Youssef Amrani a créé...</p>
+                  <p className="text-xs text-gray-500">Il y a 45 min</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <img
+                  src="https://via.placeholder.com/40"
+                  alt="user"
+                  className="w-10 h-10 rounded-full mr-3"
+                />
+                <div>
+                  <p className="text-sm">Karim Idrissi a ajouté...</p>
+                  <p className="text-xs text-gray-500">Il y a 2h</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <img
+                  src="https://via.placeholder.com/40"
+                  alt="user"
+                  className="w-10 h-10 rounded-full mr-3"
+                />
+                <div>
+                  <p className="text-sm">Leila Mansouri a partagé...</p>
+                  <p className="text-xs text-gray-500">Il y a 3h</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
