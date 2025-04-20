@@ -40,11 +40,6 @@ const ProfessionalSidebar = ({ activeTab, setActiveTab }) => {
       icon: <MessageSquare size={20} />,
       label: "Messagerie",
     },
-    {
-      id: "settings",
-      icon: <Settings size={20} />,
-      label: "Paramètres",
-    },
   ];
 
   const toggleSidebar = () => {

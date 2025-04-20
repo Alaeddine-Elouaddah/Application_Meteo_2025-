@@ -7,16 +7,14 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { logRequests, errorHandler } = require("./middlewares/middlewares");
 
-// Initialisation de l'application
-const app = express(); // Doit être placé avant tout app.use()
+// Initialisation
+const app = express();
 
-// Configuration de la limite de taux
+// Sécurité & Middlewares
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limite chaque IP à 100 requêtes par fenêtre
+  windowMs: 15 * 60 * 1000,
+  max: 100,
 });
-
-// Middlewares
 app.use(helmet());
 app.use(
   cors({
@@ -30,34 +28,42 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(logRequests);
 
-// Headers par défaut
+// Headers globaux
 app.use((req, res, next) => {
   res.setHeader("Content-Type", "application/json");
   res.setHeader("X-Powered-By", "Your App Name");
   next();
 });
 
-// Routes
+// Import des routes
 const authRoutes = require("./routes/authRoutes");
 const contactRoutes = require("./routes/contactRoutes");
-const profileRoutes = require("./routes/profileRoutes"); // Renommé pour cohérence
+const profileRoutes = require("./routes/profileRoutes");
+const userRoutes = require("./routes/userRoutes");
 
+// Utilisation des routes
+app.use("/api/v1/users", userRoutes); // ✅ correctement utilisé
 app.use("/api/auth", authRoutes);
 app.use("/api/contact", contactRoutes);
-app.use("/api/profile", profileRoutes); // Changé pour garder la même structure d'URL
+app.use("/api/profile", profileRoutes);
 
 // Route de test
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "OK", timestamp: new Date() });
 });
 
-// Connexion à MongoDB
+// Gestion des erreurs
+app.use((req, res) => {
+  res.status(404).json({ error: "Endpoint non trouvé" });
+});
+app.use(errorHandler);
+
+// Connexion MongoDB & démarrage du serveur
 const connectDB = async () => {
   try {
     if (!process.env.DB_URI) {
       throw new Error("❌ DB_URI est manquant dans le fichier .env");
     }
-
     await mongoose.connect(process.env.DB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -70,14 +76,6 @@ const connectDB = async () => {
   }
 };
 
-// Gestion des erreurs
-app.use((req, res, next) => {
-  res.status(404).json({ error: "Endpoint non trouvé" });
-});
-
-app.use(errorHandler);
-
-// Démarrage du serveur
 const startServer = async () => {
   await connectDB();
   const PORT = process.env.PORT || 5000;

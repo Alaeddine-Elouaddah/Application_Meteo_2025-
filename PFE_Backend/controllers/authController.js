@@ -369,3 +369,27 @@ exports.resetPassword = async (req, res) => {
     });
   }
 };
+
+exports.protect = (req, res, next) => {
+  // logique d'auth
+  next();
+};
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    // logique de restriction de rôle
+    next();
+  };
+};
+// authController.js
+exports.protect = (req, res, next) => {
+  // logique d'auth
+  next();
+};
+
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    // logique de restriction de rôle
+    next();
+  };
+};

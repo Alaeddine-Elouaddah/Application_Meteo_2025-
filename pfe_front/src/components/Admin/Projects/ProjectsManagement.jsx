@@ -1,6 +1,11 @@
-// Option 1: Preferred default export
+import React from "react";
+
 const ProjectsManagement = () => {
-  return <div>{/* Your projects management content */}</div>;
+  return (
+    <div>
+      <h1>Hello Project</h1>
+    </div>
+  );
 };
 
-export default ProjectsManagement; // <-- This is crucial
+export default ProjectsManagement;

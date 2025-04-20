@@ -7,16 +7,24 @@ const UserSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
 
-    // Rôles spécifiques à ton application
     role: {
       type: String,
-      enum: ["admin", "collaborateur", "stagiaire"], // Tes rôles personnalisés
-      default: "stagiaire", // Valeur par défaut
+      enum: ["admin", "collaborateur", "stagiaire"],
+      default: "stagiaire",
     },
+
+    // Champ pour stocker le superviseur (collaborateur) du stagiaire
+    supervisor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // Référence à un autre document User
+      required: function () {
+        return this.role === "stagiaire"; // Seulement requis pour les stagiaires
+      },
+    },
+
     service: {
       type: String,
       required: false,
-      // Valeur par défaut
     },
     isVerified: { type: Boolean, default: false },
     verificationCode: { type: String },
