@@ -7,12 +7,8 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { logRequests, errorHandler } = require("./middlewares/middlewares");
 
-// Routes
-const authRoutes = require("./routes/authRoutes");
-const contactRoutes = require("./routes/contactRoutes");
-
 // Initialisation de l'application
-const app = express();
+const app = express(); // Doit être placé avant tout app.use()
 
 // Configuration de la limite de taux
 const limiter = rateLimit({
@@ -41,6 +37,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// Routes
+const authRoutes = require("./routes/authRoutes");
+const contactRoutes = require("./routes/contactRoutes");
+const profileRoutes = require("./routes/profileRoutes"); // Renommé pour cohérence
+
+app.use("/api/auth", authRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/api/profile", profileRoutes); // Changé pour garder la même structure d'URL
+
+// Route de test
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "OK", timestamp: new Date() });
+});
+
 // Connexion à MongoDB
 const connectDB = async () => {
   try {
@@ -59,15 +69,6 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
-
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/contact", contactRoutes);
-
-// Route de test
-app.get("/api/health", (req, res) => {
-  res.status(200).json({ status: "OK", timestamp: new Date() });
-});
 
 // Gestion des erreurs
 app.use((req, res, next) => {

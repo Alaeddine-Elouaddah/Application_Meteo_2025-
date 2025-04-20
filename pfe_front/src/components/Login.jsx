@@ -10,6 +10,7 @@ import {
   FaEnvelope,
   FaArrowRight,
   FaHome,
+  FaBuilding,
 } from "react-icons/fa";
 import OCPLogo from "../assets/ocp.png";
 import loginImage from "../assets/a.png";
@@ -27,6 +28,7 @@ const Login = () => {
     password: "",
     confirmPassword: "",
     email: "",
+    service: "",
     verificationCode: "",
     newPassword: "",
     confirmNewPassword: "",
@@ -57,6 +59,7 @@ const Login = () => {
       password: "",
       confirmPassword: "",
       email: "",
+      service: "",
       verificationCode: "",
       newPassword: "",
       confirmNewPassword: "",
@@ -109,6 +112,12 @@ const Login = () => {
       return;
     }
 
+    if (!formData.service.trim()) {
+      setError("Le service est obligatoire");
+      setIsLoading(false);
+      return;
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError("Veuillez entrer une adresse email valide");
@@ -131,6 +140,7 @@ const Login = () => {
         body: JSON.stringify({
           username: formData.username,
           email: formData.email,
+          service: formData.service,
           password: formData.password,
         }),
       });
@@ -195,6 +205,7 @@ const Login = () => {
           username: "",
           password: "",
           confirmPassword: "",
+          service: "",
           verificationCode: "",
         }));
       }, 2000);
@@ -250,12 +261,25 @@ const Login = () => {
         return;
       }
 
-      if (data.token) {
+      if (data.token && data.user) {
+        // Stockage des données utilisateur
         localStorage.setItem("token", data.token);
-        if (data.user) {
-          localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        // Redirection en fonction du rôle
+        switch (data.user.role) {
+          case "admin":
+            navigate("/admin");
+            break;
+          case "collaborateur":
+            navigate("/collaborateur");
+            break;
+          case "stagiaire":
+            navigate("/stagiaire");
+            break;
+          default:
+            navigate("/");
         }
-        navigate("/Admin");
       }
     } catch (err) {
       setError(err.message || "Une erreur est survenue lors de la connexion");
@@ -707,27 +731,49 @@ const Login = () => {
               <>
                 <AnimatePresence mode="wait">
                   {!isLogin && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="relative">
-                        <FaUser className="absolute left-3 top-3 text-gray-400" />
-                        <input
-                          type="text"
-                          name="username"
-                          placeholder="Nom d'utilisateur"
-                          value={formData.username}
-                          onChange={handleChange}
-                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all"
-                          minLength={3}
-                          maxLength={20}
-                        />
-                      </div>
-                    </motion.div>
+                    <>
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="relative">
+                          <FaUser className="absolute left-3 top-3 text-gray-400" />
+                          <input
+                            type="text"
+                            name="username"
+                            placeholder="Nom d'utilisateur"
+                            value={formData.username}
+                            onChange={handleChange}
+                            className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all"
+                            minLength={3}
+                            maxLength={20}
+                          />
+                        </div>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="relative">
+                          <FaBuilding className="absolute left-3 top-3 text-gray-400" />
+                          <input
+                            type="text"
+                            name="service"
+                            placeholder="Service/Département"
+                            value={formData.service}
+                            onChange={handleChange}
+                            className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all"
+                          />
+                        </div>
+                      </motion.div>
+                    </>
                   )}
                 </AnimatePresence>
 
@@ -747,65 +793,65 @@ const Login = () => {
                 </motion.div>
 
                 {!isLogin && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="relative">
-                      <FaLock className="absolute left-3 top-3 text-gray-400" />
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        placeholder="Mot de passe"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all pr-10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-gray-400 hover:text-blue-600"
-                      >
-                        {showPassword ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="relative">
+                        <FaLock className="absolute left-3 top-3 text-gray-400" />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          name="password"
+                          placeholder="Mot de passe"
+                          value={formData.password}
+                          onChange={handleChange}
+                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-3 text-gray-400 hover:text-blue-600"
+                        >
+                          {showPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                      </div>
+                    </motion.div>
 
-                {!isLogin && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="relative">
-                      <FaLock className="absolute left-3 top-3 text-gray-400" />
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        name="confirmPassword"
-                        placeholder="Confirmer le mot de passe"
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all pr-10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
-                        className="absolute right-3 top-3 text-gray-400 hover:text-blue-600"
-                      >
-                        {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                      </button>
-                    </div>
-                  </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="relative">
+                        <FaLock className="absolute left-3 top-3 text-gray-400" />
+                        <input
+                          type={showConfirmPassword ? "text" : "password"}
+                          name="confirmPassword"
+                          placeholder="Confirmer le mot de passe"
+                          value={formData.confirmPassword}
+                          onChange={handleChange}
+                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                          className="absolute right-3 top-3 text-gray-400 hover:text-blue-600"
+                        >
+                          {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
                 )}
 
                 {isLogin && (

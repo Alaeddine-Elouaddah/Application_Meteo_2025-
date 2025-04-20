@@ -6,10 +6,10 @@ const bcrypt = require("bcryptjs");
 // 🔐 Créer un compte + envoyer un code de vérification
 exports.register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, email, password, service } = req.body;
 
     // Validation des champs
-    if (!username || !email || !password) {
+    if (!username || !email || !password || !service) {
       return res
         .status(400)
         .json({ error: "Tous les champs sont obligatoires." });
@@ -44,6 +44,7 @@ exports.register = async (req, res) => {
       username,
       email: email.toLowerCase(), // Normalise l'email en minuscules
       password: hashedPassword,
+      service,
       verificationCode,
       isVerified: false,
     });
