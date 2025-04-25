@@ -3,18 +3,22 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FaRocket,
-  FaChartLine,
-  FaUsers,
-  FaShieldAlt,
+  FaCloudSun,
+  FaTemperatureHigh,
+  FaWind,
+  FaUmbrella,
   FaBars,
   FaTimes,
   FaArrowRight,
   FaEnvelope,
   FaPhone,
   FaMapMarkerAlt,
+  FaMobileAlt,
+  FaGlobeAmericas,
+  FaBell,
+  FaChartLine,
 } from "react-icons/fa";
-import OCPLogo from "../assets/ocp.png";
+import WeatherLogo from "../assets/Alert.png";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -70,7 +74,11 @@ const HomePage = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            message: formData.message,
+          }),
         });
 
         if (!response.ok) {
@@ -91,48 +99,49 @@ const HomePage = () => {
       }
     }
   };
+
   const features = [
     {
-      icon: <FaRocket className="text-blue-500 text-4xl" />,
-      title: "Gestion de projets simplifiée",
+      icon: <FaTemperatureHigh className="text-blue-500 text-4xl" />,
+      title: "Données en temps réel",
       description:
-        "Organisez et suivez facilement tous vos projets et tâches en un seul endroit.",
+        "Accédez aux données météo et environnementales actualisées en permanence.",
     },
     {
-      icon: <FaShieldAlt className="text-blue-500 text-4xl" />,
-      title: "Sécurité renforcée",
+      icon: <FaBell className="text-blue-500 text-4xl" />,
+      title: "Alertes personnalisées",
       description:
-        "Vos données sont sécurisées avec notre système d'authentification avancé.",
+        "Recevez des notifications pour les conditions météo extrêmes et la qualité de l'air.",
     },
     {
-      icon: <FaUsers className="text-blue-500 text-4xl" />,
-      title: "Communication en temps réel",
+      icon: <FaGlobeAmericas className="text-blue-500 text-4xl" />,
+      title: "Multiples sources",
       description:
-        "Échangez instantanément avec votre équipe via notre système de chat intégré.",
+        "Données agrégées depuis plusieurs sources pour une meilleure précision.",
     },
     {
       icon: <FaChartLine className="text-blue-500 text-4xl" />,
-      title: "Analytiques détaillées",
+      title: "Historique et analyses",
       description:
-        "Suivez la progression de vos projets grâce à des tableaux de bord intuitifs.",
+        "Visualisez les tendances météo et environnementales sur différentes périodes.",
     },
   ];
 
   const testimonials = [
     {
       quote:
-        "Cette plateforme a transformé notre productivité. La gestion de projet n'a jamais été aussi simple !",
-      author: "Jean Dupont, Directeur Projet",
+        "Cette application a transformé notre façon de surveiller les conditions météo pour nos activités extérieures. Indispensable !",
+      author: "Jean Dupont, Responsable Événements",
     },
     {
       quote:
-        "La sécurité des données est impeccable et l'interface extrêmement intuitive.",
-      author: "Marie Lambert, Responsable IT",
+        "La précision des alertes et la qualité des données environnementales sont exceptionnelles.",
+      author: "Marie Lambert, Agricultrice",
     },
     {
       quote:
-        "Les outils de collaboration en temps réel ont révolutionné notre façon de travailler.",
-      author: "Ahmed Kassim, Chef d'équipe",
+        "En tant que municipalité, cette solution nous aide à anticiper les risques météorologiques.",
+      author: "Ahmed Kassim, Responsable Sécurité Civile",
     },
   ];
 
@@ -153,9 +162,9 @@ const HomePage = () => {
             whileHover={{ scale: 1.02 }}
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           >
-            <img src={OCPLogo} alt="Logo" className="h-10" />
+            <img src={WeatherLogo} alt="Logo" className="h-10" />
             <span className="text-2xl font-bold text-gray-800">
-              OCP Plateforme
+              Alerte Météo
             </span>
           </motion.div>
 
@@ -255,8 +264,8 @@ const HomePage = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2, duration: 0.8 }}
               >
-                Boostez votre productivité avec notre{" "}
-                <span className="text-blue-600">plateforme OCP</span>
+                Surveillance météo et environnementale en{" "}
+                <span className="text-blue-600">temps réel</span>
               </motion.h1>
 
               <motion.p
@@ -265,8 +274,9 @@ const HomePage = () => {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4, duration: 0.8 }}
               >
-                Une solution complète pour gérer vos projets, collaborer en
-                temps réel et suivre vos performances.
+                Une solution complète pour suivre les conditions
+                météorologiques, la qualité de l'air et recevoir des alertes
+                personnalisées.
               </motion.p>
 
               <motion.div
@@ -281,7 +291,7 @@ const HomePage = () => {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  Créer un compte <FaArrowRight className="ml-2" />
+                  Accéder au dashboard <FaArrowRight className="ml-2" />
                 </motion.button>
               </motion.div>
             </motion.div>
@@ -295,8 +305,8 @@ const HomePage = () => {
               <div className="bg-white rounded-2xl shadow-2xl">
                 <div className="bg-gray-100 rounded-xl h-80 w-full flex items-center justify-center overflow-hidden">
                   <img
-                    src="https://images.unsplash.com/photo-1531973576160-7125cd663d86"
-                    alt="Interface de démonstration"
+                    src="https://images.unsplash.com/photo-1580193769210-b8d1c049a7d9"
+                    alt="Interface de surveillance météo"
                     className="h-full w-full object-cover rounded-xl"
                   />
                 </div>
@@ -320,8 +330,8 @@ const HomePage = () => {
               Fonctionnalités principales
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Notre plateforme offre des outils puissants pour améliorer la
-              collaboration et la productivité de vos équipes.
+              Notre plateforme offre des outils puissants pour surveiller et
+              anticiper les conditions météorologiques et environnementales.
             </p>
           </motion.div>
 
@@ -359,7 +369,7 @@ const HomePage = () => {
               Nos Solutions
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Des solutions adaptées à tous vos besoins professionnels
+              Des solutions adaptées à différents secteurs d'activité
             </p>
           </motion.div>
 
@@ -371,12 +381,15 @@ const HomePage = () => {
               transition={{ duration: 0.5 }}
             >
               <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all h-full">
+                <div className="bg-blue-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <FaUmbrella className="text-blue-600 text-xl" />
+                </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                  Gestion de Projets
+                  Agriculture
                 </h3>
                 <p className="text-gray-600">
-                  Planification, suivi et exécution de tous vos projets en un
-                  seul endroit.
+                  Optimisez vos cultures avec des prévisions météo précises et
+                  des alertes sur les conditions climatiques critiques.
                 </p>
               </div>
             </motion.div>
@@ -388,12 +401,15 @@ const HomePage = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
             >
               <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all h-full">
+                <div className="bg-blue-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <FaMobileAlt className="text-blue-600 text-xl" />
+                </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                  Collaboration d'Équipe
+                  Événements extérieurs
                 </h3>
                 <p className="text-gray-600">
-                  Outils de communication et de partage pour une collaboration
-                  optimale.
+                  Planifiez vos événements en toute sérénité avec nos alertes
+                  météo et nos prévisions à court terme.
                 </p>
               </div>
             </motion.div>
@@ -405,11 +421,15 @@ const HomePage = () => {
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <div className="bg-white p-8 rounded-xl shadow-sm hover:shadow-md transition-all h-full">
+                <div className="bg-blue-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                  <FaWind className="text-blue-600 text-xl" />
+                </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                  Reporting Analytique
+                  Municipalités
                 </h3>
                 <p className="text-gray-600">
-                  Tableaux de bord et analyses pour suivre vos performances.
+                  Anticipez les risques météorologiques et protégez vos citoyens
+                  avec notre système d'alertes avancé.
                 </p>
               </div>
             </motion.div>
@@ -431,7 +451,7 @@ const HomePage = () => {
               À propos de nous
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Découvrez qui nous sommes et notre mission
+              Découvrez notre mission et notre expertise en météorologie
             </p>
           </motion.div>
 
@@ -445,8 +465,8 @@ const HomePage = () => {
             >
               <div className="rounded-xl overflow-hidden shadow-xl">
                 <img
-                  src="https://images.unsplash.com/photo-1552664730-d307ca884978"
-                  alt="Équipe OCP travaillant ensemble"
+                  src="https://images.unsplash.com/photo-1469122312224-c5846569feb1"
+                  alt="Équipe WeatherGuard analysant des données météo"
                   className="w-full h-auto object-cover"
                 />
               </div>
@@ -463,20 +483,20 @@ const HomePage = () => {
                 Notre Mission
               </h3>
               <p className="text-gray-600 mb-6">
-                Nous nous engageons à fournir des solutions logicielles
-                innovantes qui transforment la façon dont les équipes
-                travaillent ensemble. Notre plateforme est conçue pour
-                simplifier la collaboration et augmenter la productivité.
+                Nous nous engageons à fournir des données météorologiques et
+                environnementales précises et accessibles pour aider les
+                particuliers et les professionnels à prendre des décisions
+                éclairées face aux aléas climatiques.
               </p>
 
               <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-                Notre Vision
+                Notre Expertise
               </h3>
               <p className="text-gray-600">
-                Devenir le leader des solutions de collaboration d'équipe en
-                offrant une expérience utilisateur exceptionnelle et des
-                fonctionnalités puissantes adaptées aux besoins des entreprises
-                modernes.
+                Notre équipe de météorologues et d'ingénieurs environnementaux
+                développe des solutions innovantes pour l'agrégation et
+                l'analyse de données en temps réel, avec un accent particulier
+                sur la précision et l'utilisabilité.
               </p>
             </motion.div>
           </div>
@@ -485,7 +505,7 @@ const HomePage = () => {
 
       {/* Testimonials Section */}
 
-      {/* Contact Section */}
+      {/* Contact Section - Formulaire seulement */}
       <section id="contact" className="py-20 bg-white">
         <div className="container mx-auto px-6">
           <motion.div
@@ -499,65 +519,16 @@ const HomePage = () => {
               Contactez-nous
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Nous sommes à votre écoute pour répondre à toutes vos questions
+              Des questions sur notre solution de surveillance météo ? Notre
+              équipe est à votre écoute.
             </p>
           </motion.div>
 
-          <div className="flex flex-col lg:flex-row gap-12">
-            {/* Contact Info */}
+          <div className="flex justify-center">
             <motion.div
-              className="lg:w-1/3"
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="bg-gray-50 p-8 rounded-xl shadow-sm">
-                <h3 className="text-xl font-semibold text-gray-900 mb-6">
-                  Informations de contact
-                </h3>
-
-                <div className="space-y-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-blue-100 p-3 rounded-full">
-                      <FaEnvelope className="text-blue-600 text-xl" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Email</h4>
-                      <p className="text-gray-600">contact@ocp.com</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-blue-100 p-3 rounded-full">
-                      <FaPhone className="text-blue-600 text-xl" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Téléphone</h4>
-                      <p className="text-gray-600">+33 1 23 45 67 89</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-blue-100 p-3 rounded-full">
-                      <FaMapMarkerAlt className="text-blue-600 text-xl" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-gray-900">Adresse</h4>
-                      <p className="text-gray-600">
-                        123 Rue de la Collaboration, 75000 Paris
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Contact Form */}
-            <motion.div
-              className="lg:w-2/3"
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              className="w-full max-w-2xl"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
@@ -573,7 +544,7 @@ const HomePage = () => {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="grid grid-cols-1 gap-6 mb-6">
                       <div>
                         <label
                           htmlFor="name"
@@ -709,11 +680,12 @@ const HomePage = () => {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-3xl font-bold mb-6">
-              Prêt à révolutionner votre façon de travailler ?
+              Prêt à anticiper les conditions météo ?
             </h2>
             <p className="text-gray-400 max-w-2xl mx-auto mb-10">
-              Rejoignez des milliers d'équipes qui utilisent déjà notre
-              plateforme
+              Rejoignez des milliers de professionnels qui utilisent déjà notre
+              plateforme pour surveiller les conditions météorologiques et
+              environnementales.
             </p>
             <motion.button
               onClick={() => navigate("/Login")}
@@ -721,50 +693,13 @@ const HomePage = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.98 }}
             >
-              S'inscrire maintenant <FaArrowRight className="ml-3" />
+              Commencer Maintenat <FaArrowRight className="ml-3" />
             </motion.button>
           </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-12">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <FooterSection
-              title="OCP Plateforme"
-              content="La solution professionnelle pour la gestion de vos projets et la collaboration d'équipe."
-            />
-            <FooterLinks
-              title="Produit"
-              links={[
-                { name: "Fonctionnalités", href: "#features" },
-                { name: "Solutions", href: "#solutions" },
-                { name: "Nouveautés", href: "#updates" },
-              ]}
-            />
-            <FooterLinks
-              title="Ressources"
-              links={[
-                { name: "Documentation", href: "#docs" },
-                { name: "FAQ", href: "#faq" },
-              ]}
-            />
-            <FooterLinks
-              title="Entreprise"
-              links={[
-                { name: "À propos", href: "#about" },
-                { name: "Contact", href: "#contact" },
-              ]}
-            />
-          </div>
-          <div className="border-t border-gray-700 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p>
-              © {new Date().getFullYear()} OCP Plateforme. Tous droits réservés.
-            </p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

@@ -9,23 +9,10 @@ const UserSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["admin", "collaborateur", "stagiaire"],
-      default: "stagiaire",
+      enum: ["admin", "user"],
+      default: "user",
     },
-
-    // Champ pour stocker le superviseur (collaborateur) du stagiaire
-    supervisor: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // Référence à un autre document User
-      required: function () {
-        return this.role === "stagiaire"; // Seulement requis pour les stagiaires
-      },
-    },
-
-    service: {
-      type: String,
-      required: false,
-    },
+    lastLogin: { type: Date },
     isVerified: { type: Boolean, default: false },
     verificationCode: { type: String },
     resetCode: { type: String },

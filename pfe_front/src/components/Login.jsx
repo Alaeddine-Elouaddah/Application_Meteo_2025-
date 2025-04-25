@@ -9,12 +9,12 @@ import {
   FaCheckCircle,
   FaEnvelope,
   FaArrowRight,
-  FaHome,
-  FaBuilding,
+  FaCloudSun,
+  FaCloudShowersHeavy,
+  FaTemperatureHigh,
 } from "react-icons/fa";
-import OCPLogo from "../assets/ocp.png";
+import WeatherLogo from "../assets/ocp.png";
 import loginImage from "../assets/a.png";
-// Images sélectionnées pour OCP
 
 const registerImage =
   "https://img.freepik.com/free-vector/business-team-putting-together-jigsaw-puzzle-isolated-flat-vector-illustration-cartoon-partners-working-connection-teamwork-partnership-cooperation-concept_74855-9814.jpg";
@@ -28,7 +28,6 @@ const Login = () => {
     password: "",
     confirmPassword: "",
     email: "",
-    service: "",
     verificationCode: "",
     newPassword: "",
     confirmNewPassword: "",
@@ -59,7 +58,6 @@ const Login = () => {
       password: "",
       confirmPassword: "",
       email: "",
-      service: "",
       verificationCode: "",
       newPassword: "",
       confirmNewPassword: "",
@@ -112,12 +110,6 @@ const Login = () => {
       return;
     }
 
-    if (!formData.service.trim()) {
-      setError("Le service est obligatoire");
-      setIsLoading(false);
-      return;
-    }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError("Veuillez entrer une adresse email valide");
@@ -140,7 +132,6 @@ const Login = () => {
         body: JSON.stringify({
           username: formData.username,
           email: formData.email,
-          service: formData.service,
           password: formData.password,
         }),
       });
@@ -205,7 +196,6 @@ const Login = () => {
           username: "",
           password: "",
           confirmPassword: "",
-          service: "",
           verificationCode: "",
         }));
       }, 2000);
@@ -262,20 +252,17 @@ const Login = () => {
       }
 
       if (data.token && data.user) {
-        // Stockage des données utilisateur
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
 
         // Redirection en fonction du rôle
         switch (data.user.role) {
           case "admin":
-            navigate("/admin");
+            navigate("/Admin");
             break;
-          case "collaborateur":
-            navigate("/collaborateur");
-            break;
-          case "stagiaire":
-            navigate("/stagiaire");
+
+          case "user":
+            navigate("/user");
             break;
           default:
             navigate("/");
@@ -505,7 +492,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 px-4">
       <motion.div
         initial="hidden"
         animate="visible"
@@ -513,7 +500,7 @@ const Login = () => {
         className="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden border border-gray-100 flex flex-col md:flex-row"
       >
         {/* Left side - Illustration */}
-        <div className="hidden md:flex flex-col justify-center items-center w-full md:w-1/2 p-8 bg-gradient-to-b from-blue-50 to-blue-100">
+        <div className="hidden md:flex flex-col justify-center items-center w-full md:w-1/2 p-8 bg-gradient-to-b from-blue-50 to-cyan-100">
           <AnimatePresence mode="wait">
             <motion.div
               key={isLogin ? "login" : "register"}
@@ -530,13 +517,13 @@ const Login = () => {
               />
               <h3 className="text-2xl font-bold text-blue-800 mb-2">
                 {isLogin
-                  ? "Accès sécurisé à la plateforme OCP"
-                  : "Rejoignez l'équipe OCP"}
+                  ? "Accès à la plateforme Météo & Environnement"
+                  : "Rejoignez notre réseau de surveillance"}
               </h3>
               <p className="text-gray-600 max-w-md">
                 {isLogin
-                  ? "Connectez-vous avec vos identifiants pour accéder à toutes les fonctionnalités de votre espace professionnel."
-                  : "Créez votre compte pour collaborer avec vos collègues et accéder aux ressources de l'entreprise."}
+                  ? "Accédez aux prévisions météo en temps réel, aux alertes environnementales et aux données historiques."
+                  : "Créez un compte pour suivre les conditions météorologiques, recevoir des alertes et personnaliser vos stations favorites."}
               </p>
             </motion.div>
           </AnimatePresence>
@@ -544,12 +531,16 @@ const Login = () => {
 
         {/* Right side - Form */}
         <div className="w-full md:w-1/2 p-6 md:p-8">
-          {/* Logo OCP */}
+          {/* Logo */}
           <motion.div
             variants={itemVariants}
             className="flex justify-center mb-6"
           >
-            <img src={OCPLogo} alt="OCP Logo" className="h-16 object-contain" />
+            <img
+              src={WeatherLogo}
+              alt="Weather Logo"
+              className="h-16 object-contain"
+            />
           </motion.div>
 
           {/* Switch between login/register */}
@@ -562,7 +553,7 @@ const Login = () => {
                 <motion.div
                   animate={{
                     x: isLogin ? 0 : "100%",
-                    backgroundColor: isLogin ? "#2563eb" : "#1d4ed8",
+                    backgroundColor: isLogin ? "#0ea5e9" : "#0284c7",
                   }}
                   className="absolute top-0 left-0 w-1/2 h-full rounded-full shadow-sm"
                 />
@@ -592,7 +583,7 @@ const Login = () => {
             </motion.div>
           )}
 
-          <h2 className="text-2xl md:text-3xl font-bold text-center text-blue-600 mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-center text-cyan-600 mb-6">
             {forgotPassword
               ? resetCodeSent
                 ? newPasswordStep
@@ -602,7 +593,7 @@ const Login = () => {
               : verificationStep
               ? "Vérification du compte"
               : isLogin
-              ? "Bienvenue"
+              ? "Surveillance Météo"
               : "Créer un compte"}
           </h2>
 
@@ -620,13 +611,13 @@ const Login = () => {
                           placeholder="Nouveau mot de passe"
                           value={formData.newPassword}
                           onChange={handleChange}
-                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all pr-10"
+                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all pr-10"
                           required
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-3 text-gray-400 hover:text-blue-600"
+                          className="absolute right-3 top-3 text-gray-400 hover:text-cyan-600"
                         >
                           {showPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
@@ -642,7 +633,7 @@ const Login = () => {
                           placeholder="Confirmer le nouveau mot de passe"
                           value={formData.confirmNewPassword}
                           onChange={handleChange}
-                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all pr-10"
+                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all pr-10"
                           required
                         />
                         <button
@@ -650,7 +641,7 @@ const Login = () => {
                           onClick={() =>
                             setShowConfirmPassword(!showConfirmPassword)
                           }
-                          className="absolute right-3 top-3 text-gray-400 hover:text-blue-600"
+                          className="absolute right-3 top-3 text-gray-400 hover:text-cyan-600"
                         >
                           {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
@@ -674,7 +665,7 @@ const Login = () => {
                           placeholder="Code de vérification"
                           value={formData.verificationCode}
                           onChange={handleChange}
-                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all"
+                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all"
                           required
                         />
                       </div>
@@ -696,7 +687,7 @@ const Login = () => {
                           placeholder="Adresse Email"
                           value={formData.email}
                           onChange={handleChange}
-                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all"
+                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all"
                           required
                         />
                       </div>
@@ -721,7 +712,7 @@ const Login = () => {
                       placeholder="Code de vérification"
                       value={formData.verificationCode}
                       onChange={handleChange}
-                      className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all"
+                      className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all"
                       required
                     />
                   </div>
@@ -731,49 +722,27 @@ const Login = () => {
               <>
                 <AnimatePresence mode="wait">
                   {!isLogin && (
-                    <>
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="relative">
-                          <FaUser className="absolute left-3 top-3 text-gray-400" />
-                          <input
-                            type="text"
-                            name="username"
-                            placeholder="Nom d'utilisateur"
-                            value={formData.username}
-                            onChange={handleChange}
-                            className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all"
-                            minLength={3}
-                            maxLength={20}
-                          />
-                        </div>
-                      </motion.div>
-
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="relative">
-                          <FaBuilding className="absolute left-3 top-3 text-gray-400" />
-                          <input
-                            type="text"
-                            name="service"
-                            placeholder="Service/Département"
-                            value={formData.service}
-                            onChange={handleChange}
-                            className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all"
-                          />
-                        </div>
-                      </motion.div>
-                    </>
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="relative">
+                        <FaUser className="absolute left-3 top-3 text-gray-400" />
+                        <input
+                          type="text"
+                          name="username"
+                          placeholder="Nom d'utilisateur"
+                          value={formData.username}
+                          onChange={handleChange}
+                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all"
+                          minLength={3}
+                          maxLength={20}
+                        />
+                      </div>
+                    </motion.div>
                   )}
                 </AnimatePresence>
 
@@ -786,7 +755,7 @@ const Login = () => {
                       placeholder="Adresse Email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all"
+                      className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all"
                       required
                     />
                   </div>
@@ -809,13 +778,13 @@ const Login = () => {
                           placeholder="Mot de passe"
                           value={formData.password}
                           onChange={handleChange}
-                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all pr-10"
+                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all pr-10"
                           required
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-3 text-gray-400 hover:text-blue-600"
+                          className="absolute right-3 top-3 text-gray-400 hover:text-cyan-600"
                         >
                           {showPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
@@ -837,7 +806,7 @@ const Login = () => {
                           placeholder="Confirmer le mot de passe"
                           value={formData.confirmPassword}
                           onChange={handleChange}
-                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all pr-10"
+                          className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all pr-10"
                           required
                         />
                         <button
@@ -845,7 +814,7 @@ const Login = () => {
                           onClick={() =>
                             setShowConfirmPassword(!showConfirmPassword)
                           }
-                          className="absolute right-3 top-3 text-gray-400 hover:text-blue-600"
+                          className="absolute right-3 top-3 text-gray-400 hover:text-cyan-600"
                         >
                           {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                         </button>
@@ -864,13 +833,13 @@ const Login = () => {
                         placeholder="Mot de passe"
                         value={formData.password}
                         onChange={handleChange}
-                        className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-200 transition-all pr-10"
+                        className="pl-10 w-full py-3 rounded-lg border-2 border-gray-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-200 transition-all pr-10"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 text-gray-400 hover:text-blue-600"
+                        className="absolute right-3 top-3 text-gray-400 hover:text-cyan-600"
                       >
                         {showPassword ? <FaEyeSlash /> : <FaEye />}
                       </button>
@@ -892,7 +861,7 @@ const Login = () => {
                           password: "",
                         });
                       }}
-                      className="text-sm text-blue-600 hover:underline"
+                      className="text-sm text-cyan-600 hover:underline"
                     >
                       Mot de passe oublié ?
                     </button>
@@ -907,7 +876,7 @@ const Login = () => {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium shadow-md transition-all duration-300 flex justify-center items-center disabled:opacity-70"
+              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-3 rounded-lg font-medium shadow-md transition-all duration-300 flex justify-center items-center disabled:opacity-70"
             >
               {isLoading ? (
                 <svg
@@ -943,7 +912,10 @@ const Login = () => {
               ) : verificationStep ? (
                 "Vérifier le code"
               ) : isLogin ? (
-                "Se connecter"
+                <>
+                  <FaCloudSun className="mr-2" />
+                  Se connecter
+                </>
               ) : (
                 "S'inscrire"
               )}
@@ -984,10 +956,10 @@ const Login = () => {
                 variants={itemVariants}
                 className="mt-6 text-center text-sm text-gray-500"
               >
-                {isLogin ? "Nouveau chez OCP ?" : "Déjà membre ?"}{" "}
+                {isLogin ? "Nouveau sur la plateforme ?" : "Déjà membre ?"}{" "}
                 <button
                   onClick={toggleMode}
-                  className="text-blue-600 font-medium hover:text-blue-800 hover:underline focus:outline-none transition-colors"
+                  className="text-cyan-600 font-medium hover:text-cyan-800 hover:underline focus:outline-none transition-colors"
                 >
                   {isLogin ? "Créer un compte" : "Se connecter"}
                 </button>
@@ -1010,7 +982,7 @@ const Login = () => {
                       setVerificationStep(false);
                     }
                   }}
-                  className="text-blue-600 font-medium hover:text-blue-800 hover:underline focus:outline-none transition-colors"
+                  className="text-cyan-600 font-medium hover:text-cyan-800 hover:underline focus:outline-none transition-colors"
                 >
                   {forgotPassword
                     ? newPasswordStep

@@ -3,17 +3,16 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "./components/HomePage";
 import Login from "./components/Login";
 import Admin from "./components/Admin/Admin"; // Import sans accolades
-import Stagiaire from "./components/stagiaire"; // 1. Importez le composant
+import User from "./components/user"; // 1. Importez le composant
 import PrivateRoute from "./components/PrivateRoute";
-
+import Collaborateur from "./components/user";
 const App = () => {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/stagiaire" element={<Stagiaire />} />{" "}
-        {/* 2. Ajoutez la route */}
+        <Route path="/user" element={<User />} /> {/* 2. Ajoutez la route */}
         <Route
           path="/Admin"
           element={

@@ -9,7 +9,7 @@ exports.register = async (req, res) => {
     const { username, email, password, service } = req.body;
 
     // Validation des champs
-    if (!username || !email || !password || !service) {
+    if (!username || !email || !password) {
       return res
         .status(400)
         .json({ error: "Tous les champs sont obligatoires." });
@@ -44,7 +44,7 @@ exports.register = async (req, res) => {
       username,
       email: email.toLowerCase(), // Normalise l'email en minuscules
       password: hashedPassword,
-      service,
+
       verificationCode,
       isVerified: false,
     });
@@ -392,4 +392,24 @@ exports.restrictTo = (...roles) => {
     // logique de restriction de rôle
     next();
   };
+};
+exports.logout = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(400).json({ message: "Token manquant" });
+    }
+
+    // Vérifier et décoder le token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    // Mettre à jour la date de déconnexion
+    await User.findByIdAndUpdate(userId, { lastLogin: new Date() });
+
+    res.status(200).json({ message: "Déconnexion réussie" });
+  } catch (error) {
+    console.error("Erreur lors de la déconnexion :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
 };

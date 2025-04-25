@@ -1,6 +1,8 @@
 const User = require("../models/User");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const bcrypt = require("bcryptjs"); // ✅ Import du hash
+
 // Utility function to filter object fields
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {};
@@ -10,9 +12,11 @@ const filterObj = (obj, ...allowedFields) => {
   return newObj;
 };
 
-// Get all users
+// Get all users (excluding admin)
 exports.getAllUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find().select("-__v -password");
+  const users = await User.find({ role: { $ne: "admin" } }).select(
+    "-__v -password -verificationCode -resetCode -resetCodeExpires"
+  );
 
   res.status(200).json({
     status: "success",
@@ -25,7 +29,9 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 
 // Get single user
 exports.getUser = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.params.id).select("-__v -password");
+  const user = await User.findById(req.params.id).select(
+    "-__v -password -verificationCode -resetCode -resetCodeExpires"
+  );
 
   if (!user) {
     return next(new AppError("No user found with that ID", 404));
@@ -43,22 +49,39 @@ exports.getUser = catchAsync(async (req, res, next) => {
 exports.createUser = catchAsync(async (req, res, next) => {
   const filteredBody = filterObj(
     req.body,
-    "name",
+    "username",
     "email",
     "password",
     "role",
-    "supervisor"
+    "supervisor",
+    "service"
   );
 
-  // If role is Stagiaire, require supervisor
-  if (filteredBody.role === "Stagiaire" && !filteredBody.supervisor) {
+  if (
+    !filteredBody.role ||
+    !["admin", "collaborateur", "stagiaire"].includes(filteredBody.role)
+  ) {
+    filteredBody.role = "stagiaire";
+  }
+
+  if (filteredBody.role === "stagiaire" && !filteredBody.supervisor) {
     return next(new AppError("Supervisor is required for interns", 400));
   }
 
+  // ✅ Hash du mot de passe
+  if (filteredBody.password) {
+    filteredBody.password = await bcrypt.hash(filteredBody.password, 12);
+  }
+
+  filteredBody.isVerified = true;
+
   const newUser = await User.create(filteredBody);
 
-  // Remove password from output
+  // Supprimer infos sensibles
   newUser.password = undefined;
+  newUser.verificationCode = undefined;
+  newUser.resetCode = undefined;
+  newUser.resetCodeExpires = undefined;
 
   res.status(201).json({
     status: "success",
@@ -70,23 +93,26 @@ exports.createUser = catchAsync(async (req, res, next) => {
 
 // Update user (for admin)
 exports.updateUser = catchAsync(async (req, res, next) => {
-  // 1) Filter out unwanted fields
   const filteredBody = filterObj(
     req.body,
-    "name",
+    "username",
     "email",
     "password",
     "role",
-    "supervisor"
+    "supervisor",
+    "service",
+    "isVerified"
   );
 
-  // 2) If password is provided, it will be hashed by the pre-save middleware
-  // 3) If role is Stagiaire, require supervisor
-  if (filteredBody.role === "Stagiaire" && !filteredBody.supervisor) {
+  if (filteredBody.role === "stagiaire" && !filteredBody.supervisor) {
     return next(new AppError("Supervisor is required for interns", 400));
   }
 
-  // 4) Update user
+  // ✅ Hash du mot de passe si présent
+  if (filteredBody.password) {
+    filteredBody.password = await bcrypt.hash(filteredBody.password, 12);
+  }
+
   const updatedUser = await User.findByIdAndUpdate(
     req.params.id,
     filteredBody,
@@ -94,7 +120,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
       new: true,
       runValidators: true,
     }
-  ).select("-__v -password");
+  ).select("-__v -password -verificationCode -resetCode -resetCodeExpires");
 
   if (!updatedUser) {
     return next(new AppError("No user found with that ID", 404));
@@ -124,9 +150,10 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
 
 // Get all collaborators (for supervisor selection)
 exports.getCollaborators = catchAsync(async (req, res, next) => {
-  const collaborators = await User.find({ role: "Collaborateur" }).select(
-    "name email"
-  );
+  const collaborators = await User.find({
+    role: "collaborateur",
+    isVerified: true,
+  }).select("username email service");
 
   res.status(200).json({
     status: "success",
