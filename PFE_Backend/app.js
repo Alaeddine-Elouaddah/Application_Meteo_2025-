@@ -6,10 +6,11 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { logRequests, errorHandler } = require("./middlewares/middlewares");
+const bodyParser = require("body-parser");
 
 // Initialisation
 const app = express();
-
+app.use(bodyParser.json()); // Utilisation de body-parser pour lire les données POST
 // Sécurité & Middlewares
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -40,8 +41,13 @@ const authRoutes = require("./routes/authRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const userRoutes = require("./routes/userRoutes");
-
+const sourceMeteoRoutes = require("./routes/sourceMeteoRoutes");
+const donneesCollecteesRoutes = require("./routes/donneesCollecteesRoutes");
+const statistiquesMensuellesRoutes = require("./routes/statistiquesMensuellesRoutes");
 // Utilisation des routes
+app.use("/api/statistiques-mensuelles", statistiquesMensuellesRoutes);
+app.use("/api/donnees", donneesCollecteesRoutes);
+app.use("/api/sources", sourceMeteoRoutes);
 app.use("/api/v1/users", userRoutes); // ✅ correctement utilisé
 app.use("/api/auth", authRoutes);
 app.use("/api/contact", contactRoutes);
