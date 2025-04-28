@@ -1,70 +1,135 @@
-// utils/openWeather.js
-
 const axios = require("axios");
+require("dotenv").config();
 
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY; // Charger depuis .env
-const OPENWEATHER_BASE_URL = process.env.OPENWEATHER_BASE_URL; // Charger depuis .env
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
+const OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5";
 
-// Fonction pour récupérer les prévisions horaires (24 heures)
+// Villes principales du Maroc
+const MOROCCAN_CITIES = [
+  "Casablanca",
+  "Rabat",
+  "Marrakech",
+  "Fès",
+  "Tanger",
+  "Agadir",
+  "Meknès",
+];
+
+// Fonction optimisée pour les villes marocaines
+async function getMoroccanWeather() {
+  try {
+    const weatherData = [];
+
+    for (const city of MOROCCAN_CITIES) {
+      const response = await axios.get(`${OPENWEATHER_BASE_URL}/weather`, {
+        params: {
+          q: `${city},MA`, // Spécification du pays (MA = Maroc)
+          units: "metric",
+          lang: "fr",
+          appid: OPENWEATHER_API_KEY,
+        },
+      });
+
+      const data = response.data;
+      weatherData.push({
+        ville: city,
+        temperature: data.main.temp,
+        humidite: data.main.humidity,
+        vent: {
+          vitesse: data.wind.speed,
+          direction: degToDirection(data.wind.deg),
+        },
+        pression: data.main.pressure,
+        visibilite: data.visibility / 1000, // en km
+        dernierUpdate: new Date(data.dt * 1000),
+      });
+    }
+
+    return weatherData;
+  } catch (error) {
+    console.error("Erreur de collecte pour le Maroc:", error.message);
+    throw error; // Propager l'erreur pour une gestion ultérieure
+  }
+}
+
+// Fonction pour récupérer les prévisions horaires
 async function getHourlyWeather(city) {
   try {
     const response = await axios.get(`${OPENWEATHER_BASE_URL}/forecast`, {
       params: {
-        q: city, // Ville
-        units: "metric", // Unité des données (Celsius)
-        lang: "fr", // Langue des données
-        appid: OPENWEATHER_API_KEY, // Clé API
+        q: `${city},MA`,
+        units: "metric",
+        lang: "fr",
+        appid: OPENWEATHER_API_KEY,
       },
     });
 
-    // Retourner les données horaires
     return response.data.list.map((item) => ({
-      time: item.dt_txt, // Date et heure
-      temperature: item.main.temp, // Température en °C
-      humidity: item.main.humidity, // Humidité en %
-      windSpeed: item.wind.speed, // Vitesse du vent
-      uvIndex: item.uvi || 0, // Indice UV (si disponible)
-      airQuality: 50, // Valeur fictive de la qualité de l'air (à remplacer avec une API spécifique)
+      temperature: item.main.temp,
+      humidity: item.main.humidity,
+      windSpeed: item.wind.speed,
+      uvIndex: item.uvi || null, // UV Index n'est pas toujours disponible
+      airQuality: item.air_quality || null, // Qualité de l'air (si disponible)
+      time: item.dt * 1000, // Convertir en timestamp JavaScript
     }));
   } catch (error) {
     console.error(
-      "Erreur lors de la récupération des prévisions horaires:",
-      error
+      `Erreur lors de la récupération des données horaires pour ${city}:`,
+      error.message
     );
-    return [];
+    throw error; // Propager l'erreur pour une gestion ultérieure
   }
 }
 
-// Fonction pour récupérer les prévisions quotidiennes (7 jours)
+// Fonction pour récupérer les prévisions quotidiennes
 async function getDailyWeather(lat, lon) {
   try {
     const response = await axios.get(`${OPENWEATHER_BASE_URL}/onecall`, {
       params: {
-        lat, // Latitude
-        lon, // Longitude
-        units: "metric", // Unité des données (Celsius)
-        lang: "fr", // Langue des données
-        appid: OPENWEATHER_API_KEY, // Clé API
+        lat,
+        lon,
+        exclude: "current,minutely,hourly", // Exclure les données inutiles
+        units: "metric",
+        lang: "fr",
+        appid: OPENWEATHER_API_KEY,
       },
     });
 
-    // Retourner les données quotidiennes
-    return response.data.daily.map((item) => ({
-      date: new Date(item.dt * 1000).toISOString().split("T")[0], // Date
-      temperatureMin: item.temp.min, // Température minimum
-      temperatureMax: item.temp.max, // Température maximum
-      humidity: item.humidity, // Humidité en %
-      windSpeed: item.wind_speed, // Vitesse du vent
-      uvIndex: item.uvi, // Indice UV
-      airQuality: 50, // Valeur fictive de la qualité de l'air (à remplacer avec une API spécifique)
+    return response.data.daily.map((day) => ({
+      temperatureMin: day.temp.min,
+      temperatureMax: day.temp.max,
+      humidity: day.humidity,
+      windSpeed: day.wind_speed,
+      uvIndex: day.uvi || null, // UV Index
+      airQuality: day.air_quality || null, // Qualité de l'air (si disponible)
+      date: day.dt * 1000, // Convertir en timestamp JavaScript
     }));
   } catch (error) {
     console.error(
-      "Erreur lors de la récupération des prévisions quotidiennes:",
-      error
+      `Erreur lors de la récupération des prévisions quotidiennes pour [${lat}, ${lon}]:`,
+      error.message
     );
-    return [];
+    throw error; // Propager l'erreur pour une gestion ultérieure
   }
 }
 
-module.exports = { getHourlyWeather, getDailyWeather };
+// Helper: Conversion degrés -> direction cardinale
+function degToDirection(deg) {
+  const directions = [
+    "Nord",
+    "Nord-Est",
+    "Est",
+    "Sud-Est",
+    "Sud",
+    "Sud-Ouest",
+    "Ouest",
+    "Nord-Ouest",
+  ];
+  return directions[Math.round(deg / 45) % 8];
+}
+
+module.exports = {
+  getMoroccanWeather,
+  getHourlyWeather,
+  getDailyWeather,
+};
