@@ -8,7 +8,6 @@ import Param from "./Param/Param";
 import Dashboard from "./Dashboard/Dashboard";
 import {
   LayoutDashboard,
-  BarChart2,
   Bell,
   Users,
   Settings,
@@ -240,7 +239,7 @@ const Admin = () => {
               </button>
 
               {notificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10 transition-colors duration-200">
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 transition-colors duration-200">
                   <div className="p-4 border-b border-gray-200 dark:border-gray-600">
                     <h3 className="font-medium text-gray-800 dark:text-gray-200">
                       Notifications
@@ -363,76 +362,21 @@ const Admin = () => {
         {/* Page Content */}
         <div className="p-6 max-w-7xl mx-auto transition-colors duration-200">
           <Routes>
-            <Route index element={<Dashboard />} />
-            <Route path="comparisons" element={<Comparisons />} />
-            <Route path="alerts" element={<Alert />} />
-            <Route path="users" element={<Userss />} />
-            <Route path="settings" element={<Param />} />
-            <Route path="profile" element={<ProfileEdit />} />
+            <Route index element={<Dashboard darkMode={darkMode} />} />
+            <Route
+              path="comparisons"
+              element={<Comparisons darkMode={darkMode} />}
+            />
+            <Route path="alerts" element={<Alert darkMode={darkMode} />} />
+            <Route path="users" element={<Userss darkMode={darkMode} />} />
+            <Route path="settings" element={<Param darkMode={darkMode} />} />
+            <Route
+              path="profile"
+              element={<ProfileEdit darkMode={darkMode} />}
+            />
           </Routes>
         </div>
       </main>
-    </div>
-  );
-};
-
-const StatCard = ({ icon: Icon, title, value, change }) => {
-  const isPositive = change.startsWith("+");
-  return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-gray-500 dark:text-gray-300 text-sm font-medium">
-            {title}
-          </h3>
-          <p className="text-2xl font-bold mt-2 text-gray-800 dark:text-gray-200">
-            {value}
-          </p>
-        </div>
-        <div className="bg-blue-50 dark:bg-blue-900/50 p-3 rounded-full">
-          <Icon className="w-5 h-5 text-blue-600 dark:text-blue-300" />
-        </div>
-      </div>
-      <p
-        className={`text-sm mt-4 flex items-center ${
-          isPositive
-            ? "text-green-600 dark:text-green-400"
-            : "text-red-600 dark:text-red-400"
-        }`}
-      >
-        {change}
-        {isPositive ? (
-          <svg
-            className="w-4 h-4 ml-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 15l7-7 7 7"
-            />
-          </svg>
-        ) : (
-          <svg
-            className="w-4 h-4 ml-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        )}
-      </p>
     </div>
   );
 };

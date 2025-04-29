@@ -1,11 +1,10 @@
-import React from "react";
-
-const Users = () => {
+const Users = ({ darkMode }) => {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <h1 className="text-4xl font-bold text-blue-600">Hello Users</h1>
+    <div className={`p-6 ${darkMode ? "dark" : ""}`}>
+      <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
+        Users
+      </h2>
     </div>
   );
 };
-
 export default Users;
