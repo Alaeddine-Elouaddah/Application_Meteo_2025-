@@ -256,7 +256,7 @@ const ProfileEdit = () => {
                         name="username"
                         value={formData.username}
                         onChange={handleChange}
-                        className="pl-12 w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3"
+                        className="pl-12 w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors"
                         required
                       />
                     </div>
@@ -276,7 +276,7 @@ const ProfileEdit = () => {
                         value={formData.email}
                         onChange={handleChange}
                         disabled
-                        className="pl-12 w-full rounded-lg border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 cursor-not-allowed"
+                        className="pl-12 w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 cursor-not-allowed transition-colors"
                       />
                     </div>
                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
@@ -322,7 +322,7 @@ const ProfileEdit = () => {
                         name="oldPassword"
                         value={passwordData.oldPassword}
                         onChange={handlePasswordChange}
-                        className="pl-12 w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3"
+                        className="pl-12 w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors"
                         required
                       />
                       <button
@@ -331,12 +331,12 @@ const ProfileEdit = () => {
                         onClick={() => toggleShowPassword("old")}
                       >
                         {showPassword.old ? (
-                          <EyeOff
+                          <Eye
                             className="text-gray-500 hover:text-gray-700"
                             size={20}
                           />
                         ) : (
-                          <Eye
+                          <EyeOff
                             className="text-gray-500 hover:text-gray-700"
                             size={20}
                           />
@@ -358,7 +358,7 @@ const ProfileEdit = () => {
                         name="newPassword"
                         value={passwordData.newPassword}
                         onChange={handlePasswordChange}
-                        className="pl-12 w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3"
+                        className="pl-12 w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors"
                         required
                         minLength="8"
                       />
@@ -368,12 +368,12 @@ const ProfileEdit = () => {
                         onClick={() => toggleShowPassword("new")}
                       >
                         {showPassword.new ? (
-                          <EyeOff
+                          <Eye
                             className="text-gray-500 hover:text-gray-700"
                             size={20}
                           />
                         ) : (
-                          <Eye
+                          <EyeOff
                             className="text-gray-500 hover:text-gray-700"
                             size={20}
                           />
@@ -398,7 +398,7 @@ const ProfileEdit = () => {
                         name="confirmPassword"
                         value={passwordData.confirmPassword}
                         onChange={handlePasswordChange}
-                        className="pl-12 w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3"
+                        className="pl-12 w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors"
                         required
                         minLength="8"
                       />
@@ -408,12 +408,12 @@ const ProfileEdit = () => {
                         onClick={() => toggleShowPassword("confirm")}
                       >
                         {showPassword.confirm ? (
-                          <EyeOff
+                          <Eye
                             className="text-gray-500 hover:text-gray-700"
                             size={20}
                           />
                         ) : (
-                          <Eye
+                          <EyeOff
                             className="text-gray-500 hover:text-gray-700"
                             size={20}
                           />

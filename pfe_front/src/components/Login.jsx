@@ -619,7 +619,7 @@ const Login = () => {
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3 top-3 text-gray-400 hover:text-cyan-600"
                         >
-                          {showPassword ? <FaEyeSlash /> : <FaEye />}
+                          {showPassword ? <FaEye /> : <FaEyeSlash />}
                         </button>
                       </div>
                     </motion.div>
@@ -643,7 +643,7 @@ const Login = () => {
                           }
                           className="absolute right-3 top-3 text-gray-400 hover:text-cyan-600"
                         >
-                          {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                          {showConfirmPassword ? <FaEye /> : <FaEyeSlash />}
                         </button>
                       </div>
                     </motion.div>
@@ -786,7 +786,7 @@ const Login = () => {
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3 top-3 text-gray-400 hover:text-cyan-600"
                         >
-                          {showPassword ? <FaEyeSlash /> : <FaEye />}
+                          {showPassword ? <FaEye /> : <FaEyeSlash />}
                         </button>
                       </div>
                     </motion.div>
@@ -816,7 +816,7 @@ const Login = () => {
                           }
                           className="absolute right-3 top-3 text-gray-400 hover:text-cyan-600"
                         >
-                          {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                          {showConfirmPassword ? <FaEye /> : <FaEyeSlash />}
                         </button>
                       </div>
                     </motion.div>
@@ -841,7 +841,7 @@ const Login = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-3 text-gray-400 hover:text-cyan-600"
                       >
-                        {showPassword ? <FaEyeSlash /> : <FaEye />}
+                        {showPassword ? <FaEye /> : <FaEyeSlash />}
                       </button>
                     </div>
                   </motion.div>
