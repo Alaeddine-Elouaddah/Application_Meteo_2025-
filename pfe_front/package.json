@@ -31,7 +31,8 @@
     "react-toastify": "^11.0.5",
     "react-tsparticles": "^2.12.2",
     "recharts": "^2.15.3",
-    "three": "^0.175.0"
+    "three": "^0.175.0",
+    "weather-icons-react": "^1.2.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",

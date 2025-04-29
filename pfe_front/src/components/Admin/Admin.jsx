@@ -10,12 +10,13 @@ import {
   LayoutDashboard,
   Bell,
   Users,
-  Settings,
+  ChartNoAxesCombined,
   ChevronLeft,
   ChevronRight,
   User,
   AlertTriangle,
-  GitCompare,
+  Settings,
+  House,
   Sliders,
   Home,
   Sun,
@@ -156,14 +157,14 @@ const Admin = () => {
 
           <nav className="flex-1 space-y-1">
             <SidebarItem
-              icon={LayoutDashboard}
+              icon={House}
               label="Tableau de bord"
               to="/admin"
               active={activePath === "/admin"}
               sidebarOpen={sidebarOpen}
             />
             <SidebarItem
-              icon={GitCompare}
+              icon={ChartNoAxesCombined}
               label="Comparaisons"
               to="/admin/comparisons"
               active={activePath.startsWith("/admin/comparisons")}
@@ -184,7 +185,7 @@ const Admin = () => {
               sidebarOpen={sidebarOpen}
             />
             <SidebarItem
-              icon={Sliders}
+              icon={Settings}
               label="Paramètres"
               to="/admin/settings"
               active={activePath.startsWith("/admin/settings")}
