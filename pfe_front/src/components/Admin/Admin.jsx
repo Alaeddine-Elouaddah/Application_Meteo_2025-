@@ -298,7 +298,13 @@ const Admin = () => {
               </button>
 
               {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10 transition-colors duration-200">
+                <div
+                  className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 transition-colors duration-200"
+                  style={{
+                    zIndex: 1000, // Valeur élevée pour s'assurer qu'il apparaît au-dessus
+                    position: "fixed", // Utilisation de fixed pour éviter les problèmes de positionnement
+                  }}
+                >
                   <div className="p-4 border-b border-gray-200 dark:border-gray-600">
                     <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
                       Admin
