@@ -14,6 +14,8 @@ import {
   WiSunset,
   WiRaindrop,
   WiUmbrella,
+  WiDust,
+  WiSandstorm,
 } from "weather-icons-react";
 import {
   Chart as ChartJS,
@@ -54,12 +56,19 @@ const Dashboard = ({ darkMode }) => {
   const [location, setLocation] = useState("El Jadida");
   const [searchInput, setSearchInput] = useState("");
   const [airQuality, setAirQuality] = useState(null);
+  const [uvIndex, setUvIndex] = useState(null);
+  const [pollenData, setPollenData] = useState(null);
+  const [recentLocations, setRecentLocations] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [alerts, setAlerts] = useState([]);
+
   const API_KEY = "6e601e5bf166b100420a3cf427368540";
 
   useEffect(() => {
     const fetchWeatherData = async () => {
       try {
         setLoading(true);
+        setError(null);
 
         // Current weather data
         const currentResponse = await fetch(
@@ -67,28 +76,73 @@ const Dashboard = ({ darkMode }) => {
         );
         const currentData = await currentResponse.json();
 
+        if (currentData.cod !== 200) {
+          throw new Error(currentData.message || "Ville non trouvée");
+        }
+
         // 5-day forecast (3-hour intervals)
         const forecastResponse = await fetch(
           `https://api.openweathermap.org/data/2.5/forecast?q=${location}&units=metric&appid=${API_KEY}&lang=fr&cnt=40`
         );
         const forecastData = await forecastResponse.json();
 
-        // Air quality data (if available)
+        // Air quality data
+        const aqResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/air_pollution?lat=${currentData.coord.lat}&lon=${currentData.coord.lon}&appid=${API_KEY}`
+        );
+        const aqData = await aqResponse.json();
+
+        // UV Index data
+        const uvResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/uvi?lat=${currentData.coord.lat}&lon=${currentData.coord.lon}&appid=${API_KEY}`
+        );
+        const uvData = await uvResponse.json();
+
+        // Weather alerts (if any)
         try {
-          const aqResponse = await fetch(
-            `https://api.openweathermap.org/data/2.5/air_pollution?lat=${currentData.coord.lat}&lon=${currentData.coord.lon}&appid=${API_KEY}`
+          const alertResponse = await fetch(
+            `https://api.openweathermap.org/data/2.5/onecall?lat=${currentData.coord.lat}&lon=${currentData.coord.lon}&exclude=minutely,hourly,daily&appid=${API_KEY}`
           );
-          const aqData = await aqResponse.json();
-          setAirQuality(aqData.list[0]);
-        } catch (aqError) {
-          console.error("Error fetching air quality data:", aqError);
+          const alertData = await alertResponse.json();
+          if (alertData.alerts) {
+            setAlerts(alertData.alerts);
+          }
+        } catch (alertError) {
+          console.error("Error fetching alerts:", alertError);
         }
+
+        // Mock pollen data (as there's no free API for this)
+        const mockPollenData = {
+          grass: Math.floor(Math.random() * 5),
+          tree: Math.floor(Math.random() * 5),
+          weed: Math.floor(Math.random() * 5),
+          overall: Math.floor(Math.random() * 5),
+        };
+
+        setAirQuality(aqData.list[0]);
+        setUvIndex(uvData);
+        setPollenData(mockPollenData);
+
+        // Update recent locations
+        setRecentLocations((prev) => {
+          const newLocations = [...prev];
+          if (!newLocations.includes(location)) {
+            if (newLocations.length >= 5) {
+              newLocations.pop();
+            }
+            newLocations.unshift(location);
+          }
+          return newLocations;
+        });
 
         setWeatherData({
           temperature: Math.round(currentData.main.temp),
           feelsLike: Math.round(currentData.main.feels_like),
           humidity: currentData.main.humidity,
           windSpeed: Math.round(currentData.wind.speed * 3.6),
+          windGust: Math.round(
+            (currentData.wind.gust || currentData.wind.speed * 1.5) * 3.6
+          ),
           windDirection: getWindDirection(currentData.wind.deg),
           windDeg: currentData.wind.deg,
           condition: currentData.weather[0].main.toLowerCase(),
@@ -99,10 +153,14 @@ const Dashboard = ({ darkMode }) => {
           sunset: new Date(currentData.sys.sunset * 1000),
           icon: currentData.weather[0].icon,
           rain: currentData.rain ? currentData.rain["1h"] || 0 : 0,
+          snow: currentData.snow ? currentData.snow["1h"] || 0 : 0,
           clouds: currentData.clouds.all,
           city: currentData.name,
           country: currentData.sys.country,
           coord: currentData.coord,
+          dewPoint: Math.round(
+            currentData.main.temp - (100 - currentData.main.humidity) / 5
+          ),
         });
 
         // Process daily forecast data
@@ -116,7 +174,7 @@ const Dashboard = ({ darkMode }) => {
 
         setLoading(false);
       } catch (err) {
-        setError("Erreur lors du chargement des données météo");
+        setError(err.message || "Erreur lors du chargement des données météo");
         setLoading(false);
         console.error(err);
       }
@@ -145,6 +203,7 @@ const Dashboard = ({ darkMode }) => {
           conditions: [],
           icons: [],
           rain: [],
+          snow: [],
           clouds: [],
           pop: [],
         };
@@ -158,6 +217,7 @@ const Dashboard = ({ darkMode }) => {
       dailyData[dayKey].conditions.push(item.weather[0].main.toLowerCase());
       dailyData[dayKey].icons.push(item.weather[0].icon);
       dailyData[dayKey].rain.push(item.rain ? item.rain["3h"] || 0 : 0);
+      dailyData[dayKey].snow.push(item.snow ? item.snow["3h"] || 0 : 0);
       dailyData[dayKey].clouds.push(item.clouds.all);
       dailyData[dayKey].pop.push(item.pop ? Math.round(item.pop * 100) : 0);
     });
@@ -177,6 +237,7 @@ const Dashboard = ({ darkMode }) => {
       icon: item.weather[0].icon,
       pressure: item.main.pressure,
       rain: item.rain ? item.rain["3h"] || 0 : 0,
+      snow: item.snow ? item.snow["3h"] || 0 : 0,
       pop: item.pop ? Math.round(item.pop * 100) : 0,
       clouds: item.clouds.all,
     }));
@@ -217,6 +278,11 @@ const Dashboard = ({ darkMode }) => {
         return <WiCloudy size={size} color={color} />;
       case "wind":
         return <WiStrongWind size={size} color={color} />;
+      case "dust":
+      case "sand":
+        return <WiDust size={size} color="#D97706" />;
+      case "sandstorm":
+        return <WiSandstorm size={size} color="#92400E" />;
       default:
         return <WiDayCloudyHigh size={size} color={color} />;
     }
@@ -284,12 +350,65 @@ const Dashboard = ({ darkMode }) => {
     return levels[aqi - 1] || levels[0];
   };
 
+  const getPollenLevel = (level) => {
+    const levels = [
+      { level: "Très bas", color: "bg-green-500" },
+      { level: "Bas", color: "bg-blue-500" },
+      { level: "Modéré", color: "bg-yellow-500" },
+      { level: "Élevé", color: "bg-orange-500" },
+      { level: "Très élevé", color: "bg-red-500" },
+    ];
+    return levels[level] || levels[0];
+  };
+
+  const getUvIndexLevel = (uvIndex) => {
+    if (uvIndex <= 2) {
+      return {
+        level: "Faible",
+        color: "bg-green-500",
+        protection: "Protection minimale",
+      };
+    } else if (uvIndex <= 5) {
+      return {
+        level: "Modéré",
+        color: "bg-yellow-500",
+        protection: "Protection recommandée",
+      };
+    } else if (uvIndex <= 7) {
+      return {
+        level: "Élevé",
+        color: "bg-orange-500",
+        protection: "Protection nécessaire",
+      };
+    } else if (uvIndex <= 10) {
+      return {
+        level: "Très élevé",
+        color: "bg-red-500",
+        protection: "Protection extrême",
+      };
+    } else {
+      return {
+        level: "Extrême",
+        color: "bg-purple-500",
+        protection: "Évitez le soleil",
+      };
+    }
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchInput.trim()) {
       setLocation(searchInput);
       setSearchInput("");
     }
+  };
+
+  const selectRecentLocation = (loc) => {
+    setLocation(loc);
+  };
+
+  const toggleNotifications = () => {
+    setShowNotifications(!showNotifications);
   };
 
   // Chart configurations
@@ -359,6 +478,14 @@ const Dashboard = ({ darkMode }) => {
         tension: 0.3,
         fill: true,
       },
+      {
+        label: "Neige (cm)",
+        data: hourlyData?.map((hour) => hour.snow) || [],
+        borderColor: "#BFDBFE",
+        backgroundColor: "rgba(191, 219, 254, 0.2)",
+        tension: 0.3,
+        fill: true,
+      },
     ],
   };
 
@@ -369,6 +496,12 @@ const Dashboard = ({ darkMode }) => {
         label: "Vitesse du vent (km/h)",
         data: forecastData?.map((day) => getAverage(day.windSpeeds)) || [],
         backgroundColor: "#10B981",
+      },
+      {
+        label: "Rafales (km/h)",
+        data:
+          forecastData?.map((day) => getAverage(day.windSpeeds) * 1.3) || [],
+        backgroundColor: "#059669",
       },
     ],
   };
@@ -441,6 +574,9 @@ const Dashboard = ({ darkMode }) => {
   const inputClass = darkMode
     ? "bg-gray-700 text-white border-gray-600"
     : "bg-white text-gray-800 border-gray-300";
+  const buttonClass = darkMode
+    ? "bg-blue-600 hover:bg-blue-700"
+    : "bg-blue-500 hover:bg-blue-600";
 
   if (loading)
     return (
@@ -461,18 +597,26 @@ const Dashboard = ({ darkMode }) => {
       >
         <div className="text-center p-6 max-w-md">
           <div className="text-red-500 text-4xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold mb-2">{error}</h2>
-          <p className="mb-4">Impossible de charger les données météo.</p>
-          <button
-            onClick={() => window.location.reload()}
-            className={`px-4 py-2 rounded-lg ${
-              darkMode
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-blue-500 hover:bg-blue-600"
-            } text-white`}
-          >
-            Réessayer
-          </button>
+          <h2 className="text-xl font-bold mb-2">Erreur</h2>
+          <p className="mb-4">{error}</p>
+          <div className="flex space-x-4 justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className={`px-4 py-2 rounded-lg ${buttonClass} text-white`}
+            >
+              Réessayer
+            </button>
+            <button
+              onClick={() => setLocation("Paris")}
+              className={`px-4 py-2 rounded-lg ${
+                darkMode
+                  ? "bg-gray-700 hover:bg-gray-600"
+                  : "bg-gray-200 hover:bg-gray-300"
+              } ${textClass}`}
+            >
+              Retour à Paris
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -488,25 +632,97 @@ const Dashboard = ({ darkMode }) => {
         } shadow-md`}
       >
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
-          <h1 className={`text-2xl font-bold ${textClass} mb-4 md:mb-0`}>
-            Dashboard Météo
-          </h1>
+          <div className="flex items-center mb-4 md:mb-0">
+            <h1 className={`text-2xl font-bold ${textClass}`}>
+              Dashboard Météo
+            </h1>
+            {alerts.length > 0 && (
+              <div className="relative ml-4">
+                <button
+                  onClick={toggleNotifications}
+                  className={`p-2 rounded-full ${
+                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  } relative`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                    />
+                  </svg>
+                  <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
+                    {alerts.length}
+                  </span>
+                </button>
+                {showNotifications && (
+                  <div
+                    className={`absolute right-0 mt-2 w-72 rounded-md shadow-lg ${
+                      darkMode ? "bg-gray-700" : "bg-white"
+                    } ring-1 ring-black ring-opacity-5 z-20`}
+                  >
+                    <div
+                      className={`p-4 ${
+                        darkMode ? "bg-gray-700" : "bg-white"
+                      } rounded-md`}
+                    >
+                      <h3 className={`text-lg font-medium ${textClass} mb-2`}>
+                        Alertes Météo
+                      </h3>
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {alerts.map((alert, index) => (
+                          <div
+                            key={index}
+                            className={`p-3 rounded ${
+                              darkMode ? "bg-gray-600" : "bg-yellow-50"
+                            }`}
+                          >
+                            <h4 className={`font-bold ${textClass}`}>
+                              {alert.event}
+                            </h4>
+                            <p className={`text-sm ${secondaryTextClass}`}>
+                              {alert.description}
+                            </p>
+                            <p className="text-xs mt-1 text-gray-500">
+                              Du {new Date(alert.start * 1000).toLocaleString()}{" "}
+                              au {new Date(alert.end * 1000).toLocaleString()}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           <form onSubmit={handleSearch} className="flex w-full md:w-auto">
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Rechercher une ville..."
-              className={`flex-grow md:flex-grow-0 md:w-64 px-4 py-2 rounded-l-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-            />
+            <div className="relative flex-grow md:flex-grow-0">
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Rechercher une ville..."
+                className={`w-full md:w-64 px-4 py-2 rounded-l-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                list="recentLocations"
+              />
+              <datalist id="recentLocations">
+                {recentLocations.map((loc, index) => (
+                  <option key={index} value={loc} />
+                ))}
+              </datalist>
+            </div>
             <button
               type="submit"
-              className={`px-4 py-2 rounded-r-lg ${
-                darkMode
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-blue-500 hover:bg-blue-600"
-              } text-white`}
+              className={`px-4 py-2 rounded-r-lg ${buttonClass} text-white`}
             >
               Rechercher
             </button>
@@ -517,17 +733,40 @@ const Dashboard = ({ darkMode }) => {
       <div className="max-w-7xl mx-auto px-4">
         {/* Current Location and Date */}
         <div className="my-6">
-          <h2 className={`text-3xl font-bold ${textClass} mb-1`}>
-            {weatherData.city}, {weatherData.country}
-          </h2>
-          <p className={`text-lg ${secondaryTextClass}`}>
-            {new Date().toLocaleDateString("fr-FR", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className={`text-3xl font-bold ${textClass} mb-1`}>
+                {weatherData.city}, {weatherData.country}
+              </h2>
+              <p className={`text-lg ${secondaryTextClass}`}>
+                {new Date().toLocaleDateString("fr-FR", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+            <div className="flex space-x-2">
+              {recentLocations.length > 0 && (
+                <div className="hidden md:flex space-x-2">
+                  {recentLocations.slice(0, 3).map((loc, index) => (
+                    <button
+                      key={index}
+                      onClick={() => selectRecentLocation(loc)}
+                      className={`px-3 py-1 text-sm rounded-full ${
+                        darkMode
+                          ? "bg-gray-700 hover:bg-gray-600"
+                          : "bg-gray-200 hover:bg-gray-300"
+                      } ${textClass}`}
+                    >
+                      {loc}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Current Weather Section */}
@@ -692,11 +931,7 @@ const Dashboard = ({ darkMode }) => {
                       Point de rosée
                     </div>
                     <div className={`font-medium ${textClass}`}>
-                      {Math.round(
-                        weatherData.temperature -
-                          (100 - weatherData.humidity) / 5
-                      )}
-                      °C
+                      {weatherData.dewPoint}°C
                     </div>
                   </div>
                 </div>
@@ -712,7 +947,7 @@ const Dashboard = ({ darkMode }) => {
                       Rafales
                     </div>
                     <div className={`font-medium ${textClass}`}>
-                      {Math.round(weatherData.windSpeed * 1.2)} km/h
+                      {weatherData.windGust} km/h
                     </div>
                   </div>
                 </div>
@@ -856,10 +1091,10 @@ const Dashboard = ({ darkMode }) => {
                       }`}
                     >
                       <div className={`text-sm ${secondaryTextClass}`}>
-                        Chance de pluie
+                        Neige totale
                       </div>
                       <div className={`text-xl font-semibold ${textClass}`}>
-                        {getAverage(selectedDay.pop)}%
+                        {getSum(selectedDay.snow)} cm
                       </div>
                     </div>
                   </div>
@@ -872,8 +1107,9 @@ const Dashboard = ({ darkMode }) => {
               <h3 className={`text-2xl font-bold ${textClass} mb-6`}>
                 Prévisions horaires détaillées
               </h3>
+
               <div className="overflow-x-auto">
-                <div className="flex space-x-2 pb-4">
+                <div className="flex space-x-4 pb-4">
                   {hourlyData.map((hour, index) => (
                     <motion.div
                       key={index}
@@ -881,7 +1117,7 @@ const Dashboard = ({ darkMode }) => {
                         scale: 1.05,
                         boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
                       }}
-                      className={`flex flex-col items-center p-4 rounded-xl min-w-[100px] transition-all duration-200 ${
+                      className={`flex flex-col items-center p-4 rounded-2xl min-w-[160px] transition-all duration-200 ${
                         darkMode
                           ? "bg-gray-800 hover:bg-gray-700"
                           : "bg-white hover:bg-gray-50"
@@ -889,6 +1125,7 @@ const Dashboard = ({ darkMode }) => {
                         darkMode ? "border-gray-700" : "border-gray-200"
                       }`}
                     >
+                      {/* Heure */}
                       <div
                         className={`text-sm font-medium ${secondaryTextClass} mb-1`}
                       >
@@ -897,26 +1134,32 @@ const Dashboard = ({ darkMode }) => {
                           minute: "2-digit",
                         })}
                       </div>
+
+                      {/* Jour */}
                       <div className="text-xs text-gray-500 mb-2">
                         {hour.time.toLocaleDateString("fr-FR", {
                           weekday: "short",
                         })}
                       </div>
 
+                      {/* Icone météo */}
                       <div className="my-2">
                         {getWeatherIconFromCode(hour.icon, 40)}
                       </div>
 
+                      {/* Température */}
                       <div className={`text-lg font-bold ${textClass} mb-1`}>
                         {hour.temp}°C
                       </div>
 
+                      {/* Description */}
                       <div
                         className={`text-xs ${secondaryTextClass} text-center mb-2`}
                       >
                         {hour.description}
                       </div>
 
+                      {/* Détails : Vent, Humidité, Précipitations, Pression */}
                       <div className="flex flex-col items-center space-y-1 w-full">
                         <div className="flex items-center justify-between w-full text-xs">
                           <span className="flex items-center">
@@ -1173,100 +1416,122 @@ const Dashboard = ({ darkMode }) => {
                 }`}
               >
                 <h4 className={`font-medium ${textClass} mb-4`}>Indice UV</h4>
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`text-4xl font-bold ${textClass}`}>5.2</div>
-                  <div className="text-right">
+                {uvIndex ? (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`text-4xl font-bold ${textClass}`}>
+                        {uvIndex.value.toFixed(1)}
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-sm ${secondaryTextClass}`}>
+                          {getUvIndexLevel(uvIndex.value).level}
+                        </div>
+                        <div className="text-xs">
+                          {getUvIndexLevel(uvIndex.value).protection}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mb-2">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>0-2</span>
+                        <span>3-5</span>
+                        <span>6-7</span>
+                        <span>8-10</span>
+                        <span>11+</span>
+                      </div>
+                      <div className="w-full bg-gray-300 rounded-full h-2.5 dark:bg-gray-600">
+                        <div
+                          className={`h-2.5 rounded-full ${
+                            getUvIndexLevel(uvIndex.value).color
+                          }`}
+                          style={{
+                            width: `${Math.min(
+                              (uvIndex.value / 11) * 100,
+                              100
+                            )}%`,
+                          }}
+                        ></div>
+                      </div>
+                    </div>
                     <div className={`text-sm ${secondaryTextClass}`}>
-                      Niveau modéré
+                      L'indice UV atteint son maximum à 13h
                     </div>
-                    <div className="text-xs">
-                      Protection recommandée 11h-16h
-                    </div>
+                  </>
+                ) : (
+                  <div className={`text-sm ${secondaryTextClass}`}>
+                    Données UV non disponibles
                   </div>
-                </div>
-                <div className="mb-2">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>0-2</span>
-                    <span>3-5</span>
-                    <span>6-7</span>
-                    <span>8-10</span>
-                    <span>11+</span>
-                  </div>
-                  <div className="w-full bg-gray-300 rounded-full h-2.5 dark:bg-gray-600">
-                    <div
-                      className="bg-yellow-500 h-2.5 rounded-full"
-                      style={{ width: "50%" }}
-                    ></div>
-                  </div>
-                </div>
-                <div className={`text-sm ${secondaryTextClass}`}>
-                  L'indice UV atteint son maximum à 13h
-                </div>
+                )}
               </div>
 
-              {/* Rain Forecast */}
+              {/* Pollen Count */}
               <div
                 className={`p-5 rounded-xl ${
                   darkMode ? "bg-gray-700" : "bg-gray-100"
                 }`}
               >
                 <h4 className={`font-medium ${textClass} mb-4`}>
-                  Prévisions pluie
+                  Risque allergique
                 </h4>
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`text-4xl font-bold ${textClass}`}>
-                    {Math.max(...hourlyData.map((h) => h.pop))}%
-                  </div>
-                  <div className="text-right">
-                    <div className={`text-sm ${secondaryTextClass}`}>
-                      Risque de pluie
+                {pollenData ? (
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`text-4xl font-bold ${textClass}`}>
+                        {pollenData.overall + 1}/5
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-sm ${secondaryTextClass}`}>
+                          Risque global
+                        </div>
+                        <div className="text-xs">
+                          {getPollenLevel(pollenData.overall).level}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs">
-                      Max à{" "}
-                      {hourlyData
-                        .reduce((max, hour) =>
-                          hour.pop > max.pop ? hour : max
-                        )
-                        .time.toLocaleTimeString("fr-FR", { hour: "2-digit" })}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className={`text-sm ${secondaryTextClass}`}>
+                          Arbres
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            getPollenLevel(pollenData.tree).color
+                          } text-white`}
+                        >
+                          {getPollenLevel(pollenData.tree).level}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className={`text-sm ${secondaryTextClass}`}>
+                          Graminées
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            getPollenLevel(pollenData.grass).color
+                          } text-white`}
+                        >
+                          {getPollenLevel(pollenData.grass).level}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className={`text-sm ${secondaryTextClass}`}>
+                          Mauvaises herbes
+                        </span>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            getPollenLevel(pollenData.weed).color
+                          } text-white`}
+                        >
+                          {getPollenLevel(pollenData.weed).level}
+                        </span>
+                      </div>
                     </div>
+                  </>
+                ) : (
+                  <div className={`text-sm ${secondaryTextClass}`}>
+                    Données pollens non disponibles
                   </div>
-                </div>
-                <div className="mb-2">
-                  <div className="w-full bg-gray-300 rounded-full h-2.5 dark:bg-gray-600">
-                    <div
-                      className="bg-blue-500 h-2.5 rounded-full"
-                      style={{
-                        width: `${Math.max(...hourlyData.map((h) => h.pop))}%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 gap-2 text-xs">
-                  <div className="text-center">
-                    <div>Maintenant</div>
-                    <div className="font-medium">
-                      {hourlyData[0].pop}% <WiRaindrop size={16} />
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div>+3h</div>
-                    <div className="font-medium">
-                      {hourlyData[3].pop}% <WiRaindrop size={16} />
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div>+6h</div>
-                    <div className="font-medium">
-                      {hourlyData[6].pop}% <WiRaindrop size={16} />
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div>+12h</div>
-                    <div className="font-medium">
-                      {hourlyData[12].pop}% <WiRaindrop size={16} />
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
