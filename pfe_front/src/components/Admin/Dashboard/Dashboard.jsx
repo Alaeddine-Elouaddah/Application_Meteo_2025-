@@ -53,7 +53,7 @@ const Dashboard = ({ darkMode }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedChart, setSelectedChart] = useState("temperature");
-  const [location, setLocation] = useState("El Jadida");
+  const [location, setLocation] = useState(null);
   const [searchInput, setSearchInput] = useState("");
   const [airQuality, setAirQuality] = useState(null);
   const [uvIndex, setUvIndex] = useState(null);
@@ -61,12 +61,67 @@ const Dashboard = ({ darkMode }) => {
   const [recentLocations, setRecentLocations] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [alerts, setAlerts] = useState([]);
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [geolocationError, setGeolocationError] = useState(null);
 
   const API_KEY = "6e601e5bf166b100420a3cf427368540";
+
+  // Fonction pour détecter la localisation
+  const detectLocation = () => {
+    if (navigator.geolocation) {
+      setLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            // Récupérer le nom de la ville à partir des coordonnées
+            const response = await fetch(
+              `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${API_KEY}`
+            );
+            const data = await response.json();
+            if (data && data.length > 0) {
+              setLocation(`${data[0].name}, ${data[0].country}`);
+            } else {
+              setLocation("Paris");
+              setGeolocationError(
+                "Impossible de déterminer votre ville. Utilisation de Paris par défaut."
+              );
+            }
+          } catch (err) {
+            console.error("Error getting location name:", err);
+            setLocation("Paris");
+            setGeolocationError(
+              "Erreur lors de la récupération du nom de la ville. Utilisation de Paris par défaut."
+            );
+          }
+        },
+        (err) => {
+          console.error("Geolocation error:", err);
+          setLocation("Paris");
+          setGeolocationError(
+            "Impossible d'obtenir votre position. Utilisation de Paris par défaut."
+          );
+        }
+      );
+    } else {
+      setLocation("Paris");
+      setGeolocationError(
+        "La géolocalisation n'est pas supportée par votre navigateur. Utilisation de Paris par défaut."
+      );
+    }
+  };
+
+  useEffect(() => {
+    // Détecter la localisation au chargement du composant
+    detectLocation();
+  }, []);
 
   useEffect(() => {
     const fetchWeatherData = async () => {
       try {
+        if (!location) return;
+
         setLoading(true);
         setError(null);
 
@@ -111,7 +166,7 @@ const Dashboard = ({ darkMode }) => {
           console.error("Error fetching alerts:", alertError);
         }
 
-        // Mock pollen data (as there's no free API for this)
+        // Mock pollen data
         const mockPollenData = {
           grass: Math.floor(Math.random() * 5),
           tree: Math.floor(Math.random() * 5),
@@ -184,6 +239,24 @@ const Dashboard = ({ darkMode }) => {
       fetchWeatherData();
     }
   }, [location]);
+
+  const fetchCitySuggestions = async (query) => {
+    if (query.length < 2) {
+      setSearchSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${API_KEY}`
+      );
+      const data = await response.json();
+      setSearchSuggestions(data);
+    } catch (err) {
+      console.error("Error fetching city suggestions:", err);
+      setSearchSuggestions([]);
+    }
+  };
 
   const processDailyForecastData = (forecastList) => {
     const dailyData = {};
@@ -400,6 +473,7 @@ const Dashboard = ({ darkMode }) => {
     if (searchInput.trim()) {
       setLocation(searchInput);
       setSearchInput("");
+      setSearchSuggestions([]);
     }
   };
 
@@ -411,7 +485,6 @@ const Dashboard = ({ darkMode }) => {
     setShowNotifications(!showNotifications);
   };
 
-  // Chart configurations
   const tempChartData = {
     labels: forecastData?.map((day) => day.dayName) || [],
     datasets: [
@@ -709,16 +782,43 @@ const Dashboard = ({ darkMode }) => {
               <input
                 type="text"
                 value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  fetchCitySuggestions(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 placeholder="Rechercher une ville..."
                 className={`w-full md:w-64 px-4 py-2 rounded-l-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                list="recentLocations"
               />
-              <datalist id="recentLocations">
-                {recentLocations.map((loc, index) => (
-                  <option key={index} value={loc} />
-                ))}
-              </datalist>
+
+              {showSuggestions && searchSuggestions.length > 0 && (
+                <div
+                  className={`absolute z-10 w-full mt-1 rounded-md shadow-lg ${
+                    darkMode ? "bg-gray-700" : "bg-white"
+                  } border ${
+                    darkMode ? "border-gray-600" : "border-gray-300"
+                  } max-h-60 overflow-auto`}
+                >
+                  {searchSuggestions.map((city, index) => (
+                    <div
+                      key={index}
+                      className={`px-4 py-2 cursor-pointer ${
+                        darkMode ? "hover:bg-gray-600" : "hover:bg-gray-100"
+                      }`}
+                      onClick={() => {
+                        setLocation(`${city.name}, ${city.country}`);
+                        setSearchInput("");
+                        setSearchSuggestions([]);
+                      }}
+                    >
+                      {city.name}, {city.country}
+                      {city.state && `, ${city.state}`}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <button
               type="submit"
@@ -731,6 +831,19 @@ const Dashboard = ({ darkMode }) => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4">
+        {/* Geolocation error message */}
+        {geolocationError && (
+          <div
+            className={`my-4 p-3 rounded-lg ${
+              darkMode
+                ? "bg-yellow-900 text-yellow-200"
+                : "bg-yellow-100 text-yellow-800"
+            }`}
+          >
+            <p className="text-sm">{geolocationError}</p>
+          </div>
+        )}
+
         {/* Current Location and Date */}
         <div className="my-6">
           <div className="flex justify-between items-start">
