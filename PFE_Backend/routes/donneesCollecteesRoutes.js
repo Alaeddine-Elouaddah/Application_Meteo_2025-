@@ -1,25 +1,17 @@
-// routes/donneesCollecteesRoutes.js
-
 const express = require("express");
-const {
-  saveWeatherData,
-} = require("../controllers/donneesCollecteesController");
 const router = express.Router();
+const donneesCollecteesController = require("../controllers/donneesCollecteesController");
 
-// Route pour récupérer et enregistrer les données météo pour une ville donnée
-router.post("/collecter", async (req, res) => {
-  const { city, lat, lon } = req.body;
+// Route pour enregistrer des données
+router.post("/", donneesCollecteesController.enregistrerDonnees);
 
-  if (!city || !lat || !lon) {
-    return res
-      .status(400)
-      .json({ message: "Ville, latitude et longitude sont nécessaires." });
-  }
+// Route pour obtenir des données de comparaison
+router.get("/comparaison", donneesCollecteesController.obtenirComparaison);
 
-  await saveWeatherData(city, lat, lon);
-  res
-    .status(200)
-    .json({ message: "Données météo récupérées et enregistrées avec succès." });
-});
+// Route pour obtenir la dernière donnée d'une ville
+router.get(
+  "/derniere/:ville",
+  donneesCollecteesController.obtenirDerniereDonnee
+);
 
 module.exports = router;
