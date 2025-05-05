@@ -83,31 +83,31 @@ const Dashboard = ({ darkMode }) => {
             if (data && data.length > 0) {
               setLocation(`${data[0].name}, ${data[0].country}`);
             } else {
-              setLocation("Paris");
+              setLocation("El jadida");
               setGeolocationError(
-                "Impossible de déterminer votre ville. Utilisation de Paris par défaut."
+                "Impossible de déterminer votre ville. Utilisation de El jadida par défaut."
               );
             }
           } catch (err) {
             console.error("Error getting location name:", err);
-            setLocation("Paris");
+            setLocation("El jadida");
             setGeolocationError(
-              "Erreur lors de la récupération du nom de la ville. Utilisation de Paris par défaut."
+              "Erreur lors de la récupération du nom de la ville. Utilisation de El jadia par défaut."
             );
           }
         },
         (err) => {
           console.error("Geolocation error:", err);
-          setLocation("Paris");
+          setLocation("El jadida");
           setGeolocationError(
-            "Impossible d'obtenir votre position. Utilisation de Paris par défaut."
+            "Impossible d'obtenir votre position. Utilisation de El jadida par défaut."
           );
         }
       );
     } else {
-      setLocation("Paris");
+      setLocation("El jadida");
       setGeolocationError(
-        "La géolocalisation n'est pas supportée par votre navigateur. Utilisation de Paris par défaut."
+        "La géolocalisation n'est pas supportée par votre navigateur. Utilisation de El jadida par défaut."
       );
     }
   };
@@ -680,14 +680,14 @@ const Dashboard = ({ darkMode }) => {
               Réessayer
             </button>
             <button
-              onClick={() => setLocation("Paris")}
+              onClick={() => setLocation("El jadia")}
               className={`px-4 py-2 rounded-lg ${
                 darkMode
                   ? "bg-gray-700 hover:bg-gray-600"
                   : "bg-gray-200 hover:bg-gray-300"
               } ${textClass}`}
             >
-              Retour à Paris
+              Retour à El jadida
             </button>
           </div>
         </div>

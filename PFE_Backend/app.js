@@ -7,6 +7,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const { logRequests, errorHandler } = require("./middlewares/middlewares");
 const bodyParser = require("body-parser");
+//URL connection with frontend
 
 // Initialisation
 const app = express();
@@ -42,11 +43,10 @@ const contactRoutes = require("./routes/contactRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const userRoutes = require("./routes/userRoutes");
 const sourceMeteoRoutes = require("./routes/sourceMeteoRoutes");
-const donneesCollecteesRoutes = require("./routes/donneesCollecteesRoutes");
-const statistiquesMensuellesRoutes = require("./routes/statistiquesMensuellesRoutes");
+const donneesRoutes = require("./routes/donneesCollecteesRoutes");
+
 // Utilisation des routes
-app.use("/api/statistiques-mensuelles", statistiquesMensuellesRoutes);
-app.use("/api/donnees", donneesCollecteesRoutes);
+app.use("/api", donneesRoutes);
 app.use("/api/sources", sourceMeteoRoutes);
 app.use("/api/v1/users", userRoutes); // ✅ correctement utilisé
 app.use("/api/auth", authRoutes);
