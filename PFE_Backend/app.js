@@ -1,5 +1,6 @@
 require("dotenv").config();
-
+// server.js ou app.js
+require("./cron"); // Importez le fichier cron
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");

@@ -1,55 +1,313 @@
 const axios = require("axios");
+const DonneesCollectees = require("../models/DonneesCollectees");
+const cities = require("./cities");
+const moment = require("moment");
+require("dotenv").config();
+
 const API_KEY = process.env.OPENWEATHER_API_KEY;
 
-// Récupère les données depuis OpenWeatherMap (sans sauvegarde)
-exports.fetchAndSaveWeatherData = async (req, res) => {
-  const { city, lat, lon } = req.query;
+if (!API_KEY) {
+  console.error(
+    "ERREUR : La clé API OpenWeatherMap est manquante dans le fichier .env"
+  );
+  process.exit(1);
+}
 
+// Fonction pour obtenir les données de qualité de l'air
+const getAirQuality = async (lat, lon) => {
   try {
-    // 1. Appel API pour les données actuelles
-    const currentWeather = await axios.get(
-      `https://api.openweathermap.org/data/2.5/weather?q=${city || ""}&lat=${
-        lat || ""
-      }&lon=${lon || ""}&units=metric&appid=${API_KEY}&lang=fr`
+    const response = await axios.get(
+      `http://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`
     );
-
-    // 2. Appel pour les prévisions
-    const forecast = await axios.get(
-      `https://api.openweathermap.org/data/2.5/forecast?lat=${currentWeather.data.coord.lat}&lon=${currentWeather.data.coord.lon}&units=metric&appid=${API_KEY}&cnt=40`
-    );
-
-    // 3. Formatage des données pour correspondre au frontend
-    const weatherData = {
-      city: currentWeather.data.name,
-      country: currentWeather.data.sys.country,
-      coord: currentWeather.data.coord,
-      temperature: Math.round(currentWeather.data.main.temp),
-      feelsLike: Math.round(currentWeather.data.main.feels_like),
-      humidity: currentWeather.data.main.humidity,
-      pressure: currentWeather.data.main.pressure,
-      windSpeed: Math.round(currentWeather.data.wind.speed * 3.6), // km/h
-      windDeg: currentWeather.data.wind.deg,
-      condition: currentWeather.data.weather[0].main.toLowerCase(),
-      icon: currentWeather.data.weather[0].icon,
-      rain: currentWeather.data.rain ? currentWeather.data.rain["1h"] || 0 : 0,
-      snow: currentWeather.data.snow ? currentWeather.data.snow["1h"] || 0 : 0,
-      clouds: currentWeather.data.clouds.all,
-      forecast: forecast.data.list,
-      hourly: forecast.data.list.slice(0, 24), // 24h de données
-    };
-
-    // 4. Envoie simplement les données au frontend, sans sauvegarde
-    res.json(weatherData);
+    return response.data.list[0];
   } catch (error) {
+    console.error("Erreur récupération qualité air:", error.message);
+    return null;
+  }
+};
+
+// Fonction pour obtenir l'indice UV
+const getUVIndex = async (lat, lon) => {
+  try {
+    const response = await axios.get(
+      `http://api.openweathermap.org/data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${API_KEY}`
+    );
+    return response.data.value;
+  } catch (error) {
+    console.error("Erreur récupération UV:", error.message);
+    return null;
+  }
+};
+
+// Fonction pour obtenir les alertes météo
+const getAlerts = async (lat, lon) => {
+  try {
+    const response = await axios.get(
+      `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,hourly,daily&appid=${API_KEY}`
+    );
+    return response.data.alerts || [];
+  } catch (error) {
+    console.error("Erreur récupération alertes:", error.message);
+    return [];
+  }
+};
+
+// Fonction pour obtenir les prévisions détaillées d'une journée
+const getDayForecastDetails = (forecastList, targetDate) => {
+  const dayForecasts = forecastList.filter((item) => {
+    return moment(item.dt * 1000).isSame(targetDate, "day");
+  });
+
+  if (dayForecasts.length === 0) return null;
+
+  // Calcul des températures min/max
+  const temps = dayForecasts.map((item) => item.main.temp);
+  const tempMin = Math.round(Math.min(...temps));
+  const tempMax = Math.round(Math.max(...temps));
+
+  // Prévision de midi (pour les données principales)
+  const middayForecast =
+    dayForecasts.find((item) => moment(item.dt * 1000).hour() === 12) ||
+    dayForecasts[Math.floor(dayForecasts.length / 2)];
+
+  return {
+    date: moment(targetDate).format("DD/MM/YYYY"),
+    dayName: moment(targetDate).format("dddd"),
+    temp: Math.round(middayForecast.main.temp),
+    tempMin,
+    tempMax,
+    condition: middayForecast.weather[0].main,
+    icon: middayForecast.weather[0].icon,
+    humidity: middayForecast.main.humidity,
+    windSpeed: Math.round(middayForecast.wind.speed * 3.6),
+    rain: middayForecast.rain ? middayForecast.rain["3h"] || 0 : 0,
+    snow: middayForecast.snow ? middayForecast.snow["3h"] || 0 : 0,
+    clouds: middayForecast.clouds.all,
+    createdAt: new Date(),
+  };
+};
+
+// Insertion initiale des données complètes
+module.exports.insertAllCities = async (req, res) => {
+  try {
+    if (!cities || cities.length === 0) {
+      return res.status(400).json({
+        error: "Aucune ville à traiter",
+        solution: "Vérifiez le fichier cities.js",
+      });
+    }
+
+    const results = [];
+    let successCount = 0;
+    let skipCount = 0;
+    let errorCount = 0;
+
+    for (const cityData of cities) {
+      const { city, lat, lon } = cityData;
+
+      try {
+        // Vérifier si la ville existe déjà
+        const exists = await DonneesCollectees.findOne({ city });
+        if (exists) {
+          console.log(`⏩ ${city} existe déjà - ignorée`);
+          skipCount++;
+          continue;
+        }
+
+        // Récupérer toutes les données en parallèle
+        const [current, forecast, airQuality, uvIndex, alerts] =
+          await Promise.all([
+            axios.get(
+              `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&lang=fr`
+            ),
+            axios.get(
+              `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&cnt=40`
+            ),
+            getAirQuality(lat, lon),
+            getUVIndex(lat, lon),
+            getAlerts(lat, lon),
+          ]);
+
+        // Validation des réponses principales
+        if (!current.data || !forecast.data) {
+          throw new Error("Données API incomplètes");
+        }
+
+        // Préparer les prévisions pour les 5 prochains jours
+        const forecastDates = [];
+        for (let i = 1; i <= 5; i++) {
+          forecastDates.push(moment().add(i, "days").startOf("day").toDate());
+        }
+
+        const detailedForecast = forecastDates
+          .map((date) => getDayForecastDetails(forecast.data.list, date))
+          .filter(Boolean);
+
+        // Construction du document complet
+        const weatherDoc = {
+          city: current.data.name,
+          country: current.data.sys.country,
+          coord: {
+            lat: current.data.coord.lat,
+            lon: current.data.coord.lon,
+          },
+          temperature: Math.round(current.data.main.temp),
+          feelsLike: Math.round(current.data.main.feels_like),
+          humidity: current.data.main.humidity,
+          pressure: current.data.main.pressure,
+          windSpeed: Math.round(current.data.wind.speed * 3.6),
+          windDeg: current.data.wind.deg,
+          condition: current.data.weather[0].main,
+          icon: current.data.weather[0].icon,
+          rain: current.data.rain ? current.data.rain["1h"] || 0 : 0,
+          snow: current.data.snow ? current.data.snow["1h"] || 0 : 0,
+          clouds: current.data.clouds.all,
+          airQuality: airQuality,
+          uvIndex: uvIndex,
+          alerts: alerts,
+          forecast: detailedForecast,
+          lastUpdated: new Date(),
+        };
+
+        // Insertion dans la base de données
+        await DonneesCollectees.create(weatherDoc);
+
+        successCount++;
+        results.push({
+          city,
+          status: "success",
+          insertedAt: new Date().toISOString(),
+        });
+        console.log(
+          `✅ ${city} insérée avec succès (${detailedForecast.length} jours de prévisions)`
+        );
+
+        // Pause pour éviter le rate limiting
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      } catch (error) {
+        errorCount++;
+        console.error(`❌ Erreur sur ${city}:`, error.message);
+        results.push({
+          city,
+          status: "failed",
+          error: error.message,
+        });
+      }
+    }
+
+    res.json({
+      summary: {
+        totalCities: cities.length,
+        success: successCount,
+        skipped: skipCount,
+        errors: errorCount,
+      },
+      details: results,
+      message: `Insertion terminée. ${successCount} villes ajoutées avec données complètes.`,
+    });
+  } catch (error) {
+    console.error("ERREUR GLOBALE:", error);
     res.status(500).json({
-      message: error.response?.data?.message || "Erreur serveur",
+      error: "Erreur serveur",
+      details: error.message,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };
 
-// Cette méthode reste inchangée, mais ne fonctionnera plus sans base de données
-exports.getLatestData = async (req, res) => {
-  res.status(501).json({
-    message: "La récupération de données sauvegardées est désactivée.",
-  });
+// Fonction pour obtenir les prévisions du jour suivant
+const getNextDayForecast = async (cityData) => {
+  const { city, lat, lon } = cityData;
+
+  try {
+    const [forecast, airQuality] = await Promise.all([
+      axios.get(
+        `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&cnt=40`
+      ),
+      getAirQuality(lat, lon),
+    ]);
+
+    if (!forecast.data) {
+      throw new Error("Données API incomplètes");
+    }
+
+    // Date du 6ème jour
+    const nextDayDate = moment().add(6, "days").startOf("day").toDate();
+    const nextDayForecast = getDayForecastDetails(
+      forecast.data.list,
+      nextDayDate
+    );
+
+    if (!nextDayForecast) {
+      throw new Error("Prévision pour le 6ème jour non disponible");
+    }
+
+    return {
+      ...nextDayForecast,
+      airQuality: airQuality,
+    };
+  } catch (error) {
+    console.error(`❌ Erreur pour ${city}:`, error.message);
+    throw error;
+  }
+};
+
+// Tâche cron pour ajouter le jour suivant
+module.exports.addNextDayForecast = async () => {
+  try {
+    console.log(
+      "⏳ Début de l'ajout du jour suivant pour toutes les villes..."
+    );
+
+    const allCities = await DonneesCollectees.find({});
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const cityDoc of allCities) {
+      try {
+        const nextDayForecast = await getNextDayForecast({
+          city: cityDoc.city,
+          lat: cityDoc.coord.lat,
+          lon: cityDoc.coord.lon,
+        });
+
+        // Vérifier si cette date existe déjà
+        const exists = cityDoc.forecast.some(
+          (f) => f.date === nextDayForecast.date
+        );
+
+        if (!exists) {
+          await DonneesCollectees.updateOne(
+            { _id: cityDoc._id },
+            {
+              $push: { forecast: nextDayForecast },
+              $set: {
+                lastUpdated: new Date(),
+                airQuality: nextDayForecast.airQuality,
+              },
+            }
+          );
+          console.log(
+            `➕ ${cityDoc.city}: ajout prévision pour ${nextDayForecast.date}`
+          );
+          successCount++;
+        } else {
+          console.log(
+            `⏩ ${cityDoc.city}: prévision existe déjà pour ${nextDayForecast.date}`
+          );
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      } catch (error) {
+        errorCount++;
+        console.error(`❌ Erreur pour ${cityDoc.city}:`, error.message);
+      }
+    }
+
+    console.log(
+      `✅ Ajout terminé: ${successCount} réussites, ${errorCount} échecs`
+    );
+  } catch (error) {
+    console.error("ERREUR GLOBALE DANS LA TÂCHE CRON:", error);
+  }
 };
