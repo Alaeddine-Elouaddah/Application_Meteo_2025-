@@ -90,9 +90,9 @@ const getDayForecastDetails = (forecastList, targetDate) => {
 // Insertion initiale des données complètes
 module.exports.insertAllCities = async (req, res) => {
   try {
-    if (!cities || cities.length === 0) {
+    if (!cities || !Array.isArray(cities) || cities.length === 0) {
       return res.status(400).json({
-        error: "Aucune ville à traiter",
+        error: "Aucune ville à traiter ou format invalide",
         solution: "Vérifiez le fichier cities.js",
       });
     }
@@ -103,7 +103,28 @@ module.exports.insertAllCities = async (req, res) => {
     let errorCount = 0;
 
     for (const cityData of cities) {
-      const { city, lat, lon } = cityData;
+      // Validation des données de la ville
+      if (!cityData || typeof cityData !== "object") {
+        errorCount++;
+        results.push({
+          status: "failed",
+          error: "Données de ville invalides",
+          rawData: cityData,
+        });
+        continue;
+      }
+
+      const { city, lat, lon } = cityData || {};
+
+      if (!city || lat === undefined || lon === undefined) {
+        errorCount++;
+        results.push({
+          status: "failed",
+          error: "Données de ville incomplètes (manque city, lat ou lon)",
+          rawData: cityData,
+        });
+        continue;
+      }
 
       try {
         // Vérifier si la ville existe déjà
@@ -111,6 +132,11 @@ module.exports.insertAllCities = async (req, res) => {
         if (exists) {
           console.log(`⏩ ${city} existe déjà - ignorée`);
           skipCount++;
+          results.push({
+            city,
+            status: "skipped",
+            reason: "Existe déjà en base de données",
+          });
           continue;
         }
 
@@ -129,7 +155,7 @@ module.exports.insertAllCities = async (req, res) => {
           ]);
 
         // Validation des réponses principales
-        if (!current.data || !forecast.data) {
+        if (!current?.data || !forecast?.data) {
           throw new Error("Données API incomplètes");
         }
 
@@ -146,22 +172,23 @@ module.exports.insertAllCities = async (req, res) => {
         // Construction du document complet
         const weatherDoc = {
           city: current.data.name,
-          country: current.data.sys.country,
+          country: current.data.sys?.country || "Inconnu",
+          date: new Date().toLocaleDateString("fr-FR"),
           coord: {
-            lat: current.data.coord.lat,
-            lon: current.data.coord.lon,
+            lat: current.data.coord?.lat || lat,
+            lon: current.data.coord?.lon || lon,
           },
-          temperature: Math.round(current.data.main.temp),
-          feelsLike: Math.round(current.data.main.feels_like),
-          humidity: current.data.main.humidity,
-          pressure: current.data.main.pressure,
-          windSpeed: Math.round(current.data.wind.speed * 3.6),
-          windDeg: current.data.wind.deg,
-          condition: current.data.weather[0].main,
-          icon: current.data.weather[0].icon,
+          temperature: Math.round(current.data.main?.temp || 0),
+          feelsLike: Math.round(current.data.main?.feels_like || 0),
+          humidity: current.data.main?.humidity || 0,
+          pressure: current.data.main?.pressure || 0,
+          windSpeed: Math.round((current.data.wind?.speed || 0) * 3.6),
+          windDeg: current.data.wind?.deg || 0,
+          condition: current.data.weather?.[0]?.main || "Inconnu",
+          icon: current.data.weather?.[0]?.icon || "01d",
           rain: current.data.rain ? current.data.rain["1h"] || 0 : 0,
           snow: current.data.snow ? current.data.snow["1h"] || 0 : 0,
-          clouds: current.data.clouds.all,
+          clouds: current.data.clouds?.all || 0,
           airQuality: airQuality,
           uvIndex: uvIndex,
           alerts: alerts,
@@ -227,7 +254,7 @@ const getNextDayForecast = async (cityData) => {
       getAirQuality(lat, lon),
     ]);
 
-    if (!forecast.data) {
+    if (!forecast?.data) {
       throw new Error("Données API incomplètes");
     }
 
@@ -309,5 +336,72 @@ module.exports.addNextDayForecast = async () => {
     );
   } catch (error) {
     console.error("ERREUR GLOBALE DANS LA TÂCHE CRON:", error);
+  }
+};
+
+module.exports.getTodayForecast = async (req, res) => {
+  try {
+    const { city } = req.params;
+    const todayDate = moment().format("DD/MM/YYYY");
+
+    const data = await DonneesCollectees.findOne(
+      {
+        city,
+        "forecast.date": todayDate,
+      },
+      {
+        "forecast.$": 1,
+        city: 1,
+        country: 1,
+        lastUpdated: 1,
+      }
+    );
+
+    if (!data || !data.forecast || data.forecast.length === 0) {
+      return res.status(404).json({
+        error: "Aucune donnée trouvée pour aujourd'hui",
+        date: todayDate,
+      });
+    }
+
+    res.json({
+      city: data.city,
+      country: data.country,
+      lastUpdated: data.lastUpdated,
+      forecast: data.forecast[0],
+    });
+  } catch (error) {
+    console.error("Erreur:", error);
+    res.status(500).json({
+      error: "Erreur serveur",
+      details: error.message,
+    });
+  }
+};
+
+module.exports.getTodayData = async (req, res) => {
+  try {
+    const { city } = req.params;
+    const todayDate = moment().format("DD/MM/YYYY");
+
+    const data = await DonneesCollectees.findOne({
+      city,
+      date: todayDate,
+    });
+
+    if (!data) {
+      return res.status(404).json({
+        error: "Aucune donnée trouvée pour aujourd'hui",
+        date: todayDate,
+      });
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error("Erreur:", error);
+    res.status(500).json({
+      error: "Erreur serveur",
+      details: error.message,
+    });
   }
 };

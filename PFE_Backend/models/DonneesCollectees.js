@@ -4,6 +4,8 @@ const DonneesCollecteesSchema = new mongoose.Schema(
   {
     city: { type: String, required: true, unique: true },
     country: { type: String, required: true },
+    date: String, // Format "DD/MM/YYYY"
+
     coord: {
       lat: { type: Number },
       lon: { type: Number },

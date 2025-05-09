@@ -1,7 +1,7 @@
 const User = require("../models/User");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
-const bcrypt = require("bcryptjs"); // ✅ Import du hash
+const bcrypt = require("bcryptjs");
 
 // Utility function to filter object fields
 const filterObj = (obj, ...allowedFields) => {
@@ -52,23 +52,15 @@ exports.createUser = catchAsync(async (req, res, next) => {
     "username",
     "email",
     "password",
-    "role",
-    "supervisor",
-    "service"
+    "role"
   );
 
-  if (
-    !filteredBody.role ||
-    !["admin", "collaborateur", "stagiaire"].includes(filteredBody.role)
-  ) {
-    filteredBody.role = "stagiaire";
+  // Set default role to 'user' if not provided or invalid
+  if (!filteredBody.role || !["admin", "user"].includes(filteredBody.role)) {
+    filteredBody.role = "user";
   }
 
-  if (filteredBody.role === "stagiaire" && !filteredBody.supervisor) {
-    return next(new AppError("Supervisor is required for interns", 400));
-  }
-
-  // ✅ Hash du mot de passe
+  // Hash the password
   if (filteredBody.password) {
     filteredBody.password = await bcrypt.hash(filteredBody.password, 12);
   }
@@ -77,7 +69,7 @@ exports.createUser = catchAsync(async (req, res, next) => {
 
   const newUser = await User.create(filteredBody);
 
-  // Supprimer infos sensibles
+  // Remove sensitive information
   newUser.password = undefined;
   newUser.verificationCode = undefined;
   newUser.resetCode = undefined;
@@ -99,16 +91,10 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "email",
     "password",
     "role",
-    "supervisor",
-    "service",
     "isVerified"
   );
 
-  if (filteredBody.role === "stagiaire" && !filteredBody.supervisor) {
-    return next(new AppError("Supervisor is required for interns", 400));
-  }
-
-  // ✅ Hash du mot de passe si présent
+  // Hash the password if present
   if (filteredBody.password) {
     filteredBody.password = await bcrypt.hash(filteredBody.password, 12);
   }
@@ -148,18 +134,60 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
   });
 });
 
-// Get all collaborators (for supervisor selection)
-exports.getCollaborators = catchAsync(async (req, res, next) => {
-  const collaborators = await User.find({
-    role: "collaborateur",
+// Get all users (for selection)
+exports.getUsers = catchAsync(async (req, res, next) => {
+  const users = await User.find({
+    role: "user",
     isVerified: true,
-  }).select("username email service");
+  }).select("username email");
 
   res.status(200).json({
     status: "success",
-    results: collaborators.length,
+    results: users.length,
     data: {
-      collaborators,
+      users,
     },
+  });
+});
+// Activer/Désactiver un utilisateur (Admin only)
+exports.updateUserActiveStatus = catchAsync(async (req, res, next) => {
+  const { active } = req.body; // Doit être un booléen
+
+  // Validation
+  if (typeof active !== "boolean") {
+    return next(
+      new AppError("Please provide a valid active status (true/false)", 400)
+    );
+  }
+
+  // Empêcher un admin de se désactiver lui-même
+  if (req.params.id === req.user.id && !active) {
+    return next(new AppError("You cannot deactivate your own account", 403));
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { isActive: active },
+    { new: true }
+  ).select("-password -__v -verificationCode -resetCode");
+
+  if (!user) {
+    return next(new AppError("No user found with that ID", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      user: {
+        id: user._id,
+        isActive: user.isActive,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
+    },
+    message: `User account has been ${
+      user.isActive ? "activated" : "deactivated"
+    } successfully`,
   });
 });

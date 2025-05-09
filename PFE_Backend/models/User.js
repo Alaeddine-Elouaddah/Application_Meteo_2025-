@@ -13,6 +13,7 @@ const UserSchema = new mongoose.Schema(
       default: "user",
     },
     lastLogin: { type: Date },
+    isActive: { type: Boolean, default: true }, // Champ pour activer/désactiver le compte
     isVerified: { type: Boolean, default: false },
     verificationCode: { type: String },
     resetCode: { type: String },

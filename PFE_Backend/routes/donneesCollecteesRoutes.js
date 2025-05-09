@@ -3,11 +3,14 @@ const router = express.Router();
 const {
   insertAllCities,
   addNextDayForecast,
+  getTodayForecast,
+  getTodayData,
 } = require("../controllers/donneesCollecteesController");
 
 // Route pour l'insertion initiale
 router.get("/init", insertAllCities);
-
+router.get("/today/:city", getTodayForecast);
+router.get("/today-data/:city", getTodayData);
 // Route pour tester manuellement le cron job
 router.get("/add-next-day", (req, res) => {
   addNextDayForecast()
