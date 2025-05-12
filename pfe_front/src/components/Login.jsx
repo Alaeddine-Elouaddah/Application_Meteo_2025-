@@ -254,7 +254,7 @@ const Login = () => {
       if (data.token && data.user) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
-
+        localStorage.setItem("role", data.user.role); // Doit être exactement 'admin' ou 'user'
         // Redirection en fonction du rôle
         switch (data.user.role) {
           case "admin":

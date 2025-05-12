@@ -2,21 +2,35 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "./components/HomePage";
 import Login from "./components/Login";
-import Admin from "./components/Admin/Admin"; // Import sans accolades
-import User from "./components/user"; // 1. Importez le composant
+import Admin from "./components/Admin/Admin";
+import User from "./components/User"; // Corrigé : le U majuscule
 import PrivateRoute from "./components/PrivateRoute";
-import Collaborateur from "./components/user";
+
 const App = () => {
   return (
     <Router>
       <Routes>
+        {/* Accueil */}
         <Route path="/" element={<HomePage />} />
+
+        {/* Login */}
         <Route path="/login" element={<Login />} />
-        <Route path="/user" element={<User />} /> {/* 2. Ajoutez la route */}
+
+        {/* Route protégée pour USER */}
+        <Route
+          path="/user"
+          element={
+            <PrivateRoute role="user">
+              <User />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Route protégée pour ADMIN */}
         <Route
           path="/admin/*"
           element={
-            <PrivateRoute>
+            <PrivateRoute role="admin">
               <Admin />
             </PrivateRoute>
           }
