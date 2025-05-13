@@ -1071,8 +1071,9 @@ const Dashboard = ({ darkMode }) => {
 
         {/* Forecast Sections */}
         <section className="mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 7-Day Forecast */}
+          {/* Première ligne - Prévisions 6 jours et Détails du jour */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Prévisions 6 jours */}
             <div className={`p-6 rounded-xl shadow ${cardClass}`}>
               <h3 className={`text-xl font-semibold ${textClass} mb-4`}>
                 Prévisions 6 jours
@@ -1113,7 +1114,7 @@ const Dashboard = ({ darkMode }) => {
               </div>
             </div>
 
-            {/* Selected Day Details */}
+            {/* Détails du jour sélectionné */}
             <div className={`p-6 rounded-xl shadow ${cardClass}`}>
               <h3 className={`text-xl font-semibold ${textClass} mb-4`}>
                 Détails pour {selectedDay?.dayName}
@@ -1214,109 +1215,107 @@ const Dashboard = ({ darkMode }) => {
                 </div>
               )}
             </div>
+          </div>
 
-            {/* Hourly Forecast */}
-            <div className={`p-6 rounded-xl shadow-lg ${cardClass}`}>
-              <h3 className={`text-2xl font-bold ${textClass} mb-6`}>
-                Prévisions horaires détaillées
-              </h3>
+          {/* Deuxième ligne - Prévisions horaires détaillées */}
+          <div className={`p-6 rounded-xl shadow-lg ${cardClass}`}>
+            <h3 className={`text-xl font-semibold ${textClass} mb-4`}>
+              Prévisions horaires détaillées
+            </h3>
 
-              <div className="overflow-x-auto">
-                <div className="flex space-x-4 pb-4">
-                  {hourlyData.map((hour, index) => (
-                    <motion.div
-                      key={index}
-                      whileHover={{
-                        scale: 1.05,
-                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                      }}
-                      className={`flex flex-col items-center p-4 rounded-2xl min-w-[160px] transition-all duration-200 ${
-                        darkMode
-                          ? "bg-gray-800 hover:bg-gray-700"
-                          : "bg-white hover:bg-gray-50"
-                      } border ${
-                        darkMode ? "border-gray-700" : "border-gray-200"
-                      }`}
+            <div className="overflow-x-auto">
+              <div className="flex space-x-4 pb-4">
+                {hourlyData.map((hour, index) => (
+                  <motion.div
+                    key={index}
+                    whileHover={{
+                      scale: 1.05,
+                      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                    }}
+                    className={`flex flex-col items-center p-4 rounded-2xl min-w-[160px] transition-all duration-200 ${
+                      darkMode
+                        ? "bg-gray-800 hover:bg-gray-700"
+                        : "bg-white hover:bg-gray-50"
+                    } border ${
+                      darkMode ? "border-gray-700" : "border-gray-200"
+                    }`}
+                  >
+                    {/* Heure */}
+                    <div
+                      className={`text-sm font-medium ${secondaryTextClass} mb-1`}
                     >
-                      {/* Heure */}
-                      <div
-                        className={`text-sm font-medium ${secondaryTextClass} mb-1`}
-                      >
-                        {hour.time.toLocaleTimeString("fr-FR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                      {hour.time.toLocaleTimeString("fr-FR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+
+                    {/* Jour */}
+                    <div className="text-xs text-gray-500 mb-2">
+                      {hour.time.toLocaleDateString("fr-FR", {
+                        weekday: "short",
+                      })}
+                    </div>
+
+                    {/* Icone météo */}
+                    <div className="my-2">
+                      {getWeatherIconFromCode(hour.icon, 40)}
+                    </div>
+
+                    {/* Température */}
+                    <div className={`text-lg font-bold ${textClass} mb-1`}>
+                      {hour.temp}°C
+                    </div>
+
+                    {/* Description */}
+                    <div
+                      className={`text-xs ${secondaryTextClass} text-center mb-2`}
+                    >
+                      {hour.description}
+                    </div>
+
+                    {/* Détails : Vent, Humidité, Précipitations, Pression */}
+                    <div className="flex flex-col items-center space-y-1 w-full">
+                      <div className="flex items-center justify-between w-full text-xs">
+                        <span className="flex items-center">
+                          <WiStrongWind size={16} className="mr-1" />
+                          Vent
+                        </span>
+                        <span className="font-medium">
+                          {hour.windSpeed} km/h
+                        </span>
                       </div>
 
-                      {/* Jour */}
-                      <div className="text-xs text-gray-500 mb-2">
-                        {hour.time.toLocaleDateString("fr-FR", {
-                          weekday: "short",
-                        })}
+                      <div className="flex items-center justify-between w-full text-xs">
+                        <span className="flex items-center">
+                          <WiHumidity size={16} className="mr-1" />
+                          Humidité
+                        </span>
+                        <span className="font-medium">{hour.humidity}%</span>
                       </div>
 
-                      {/* Icone météo */}
-                      <div className="my-2">
-                        {getWeatherIconFromCode(hour.icon, 40)}
-                      </div>
-
-                      {/* Température */}
-                      <div className={`text-lg font-bold ${textClass} mb-1`}>
-                        {hour.temp}°C
-                      </div>
-
-                      {/* Description */}
-                      <div
-                        className={`text-xs ${secondaryTextClass} text-center mb-2`}
-                      >
-                        {hour.description}
-                      </div>
-
-                      {/* Détails : Vent, Humidité, Précipitations, Pression */}
-                      <div className="flex flex-col items-center space-y-1 w-full">
+                      {hour.pop > 0 && (
                         <div className="flex items-center justify-between w-full text-xs">
                           <span className="flex items-center">
-                            <WiStrongWind size={16} className="mr-1" />
-                            Vent
+                            <WiRaindrop size={16} className="mr-1" />
+                            Précip.
                           </span>
-                          <span className="font-medium">
-                            {hour.windSpeed} km/h
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between w-full text-xs">
-                          <span className="flex items-center">
-                            <WiHumidity size={16} className="mr-1" />
-                            Humidité
-                          </span>
-                          <span className="font-medium">{hour.humidity}%</span>
-                        </div>
-
-                        {hour.pop > 0 && (
-                          <div className="flex items-center justify-between w-full text-xs">
-                            <span className="flex items-center">
-                              <WiRaindrop size={16} className="mr-1" />
-                              Précip.
-                            </span>
-                            <span className="font-medium text-blue-500">
-                              {hour.pop}%
-                            </span>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-between w-full text-xs">
-                          <span className="flex items-center">
-                            <WiBarometer size={16} className="mr-1" />
-                            Pression
-                          </span>
-                          <span className="font-medium">
-                            {hour.pressure} hPa
+                          <span className="font-medium text-blue-500">
+                            {hour.pop}%
                           </span>
                         </div>
+                      )}
+
+                      <div className="flex items-center justify-between w-full text-xs">
+                        <span className="flex items-center">
+                          <WiBarometer size={16} className="mr-1" />
+                          Pression
+                        </span>
+                        <span className="font-medium">{hour.pressure} hPa</span>
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </div>
           </div>

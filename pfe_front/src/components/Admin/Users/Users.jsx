@@ -8,8 +8,7 @@ const API_BASE_URL = "http://localhost:8000/api/v1";
 
 Modal.setAppElement("#root");
 
-// Styles personnalisés pour les modales
-const customModalStyles = {
+const customModalStyles = (darkMode) => ({
   content: {
     top: "50%",
     left: "50%",
@@ -24,15 +23,16 @@ const customModalStyles = {
     border: "none",
     padding: "0",
     overflow: "hidden",
+    backgroundColor: darkMode ? "#1f2937" : "#ffffff",
+    color: darkMode ? "#f3f4f6" : "#111827",
   },
   overlay: {
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     zIndex: 1000,
   },
-};
+});
 
-const Users = () => {
-  // États
+const Users = ({ darkMode }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,34 +44,49 @@ const Users = () => {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
-    role: "user",
     password: "",
   });
+  const [errors, setErrors] = useState({});
   const usersPerPage = 10;
 
-  // Récupération des utilisateurs
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await axios.get(`${API_BASE_URL}/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const usersData =
+        data.data?.users || data.users || (Array.isArray(data) ? data : []);
+      setUsers(usersData);
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "Erreur lors du chargement des utilisateurs"
+      );
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const { data } = await axios.get(`${API_BASE_URL}/users`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUsers(data.data?.users || data.users || data);
-        toast.success("Liste des utilisateurs chargée avec succès");
-      } catch (error) {
-        toast.error(
-          error.response?.data?.message ||
-            "Erreur lors du chargement des utilisateurs"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUsers();
   }, []);
 
-  // Gestion du statut actif/inactif
+  const refreshUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await axios.get(`${API_BASE_URL}/users`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const usersData =
+        data.data?.users || data.users || (Array.isArray(data) ? data : []);
+      setUsers(usersData);
+    } catch (error) {
+      toast.error("Erreur lors du rafraîchissement des utilisateurs");
+    }
+  };
+
   const toggleUserStatus = async (userId, currentStatus) => {
     try {
       const token = localStorage.getItem("token");
@@ -80,11 +95,7 @@ const Users = () => {
         { active: !currentStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setUsers(
-        users.map((user) =>
-          user._id === userId ? { ...user, active: !currentStatus } : user
-        )
-      );
+      await refreshUsers();
       toast.success(
         `Utilisateur ${!currentStatus ? "activé" : "désactivé"} avec succès`
       );
@@ -96,10 +107,18 @@ const Users = () => {
     }
   };
 
-  // Gestion suppression
   const confirmDelete = (user) => {
     setUserToDelete(user);
     setIsDeleteModalOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      username: "",
+      email: "",
+      password: "",
+    });
+    setErrors({});
   };
 
   const handleDelete = async () => {
@@ -108,7 +127,7 @@ const Users = () => {
       await axios.delete(`${API_BASE_URL}/users/${userToDelete._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUsers(users.filter((user) => user._id !== userToDelete._id));
+      await refreshUsers();
       toast.success("Utilisateur supprimé avec succès");
     } catch (error) {
       toast.error(
@@ -120,68 +139,141 @@ const Users = () => {
     }
   };
 
-  // Gestion édition/ajout
   const openUserModal = (user = null) => {
     if (user) {
       setCurrentUser(user);
       setFormData({
-        username: user.username,
-        email: user.email,
-        role: user.role,
+        username: user.username || "",
+        email: user.email || "",
         password: "",
       });
     } else {
       setCurrentUser(null);
-      setFormData({
-        username: "",
-        email: "",
-        role: "user",
-        password: "",
-      });
+      resetForm();
     }
+    setErrors({});
     setIsUserModalOpen(true);
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.username.trim())
+      newErrors.username = "Le nom d'utilisateur est requis";
+    if (!formData.email.trim()) newErrors.email = "L'email est requis";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "L'email n'est pas valide";
+    }
+
+    if (!currentUser) {
+      if (!formData.password) {
+        newErrors.password = "Le mot de passe est requis";
+      } else if (formData.password.length < 8) {
+        newErrors.password =
+          "Le mot de passe doit contenir au moins 8 caractères";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateForm()) return;
+
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        toast.error("Authentification requise");
+        return;
+      }
+
       if (currentUser) {
-        // Mise à jour
+        // Mise à jour d'un utilisateur existant
+        const updateData = {
+          username: formData.username,
+          ...(formData.password && { password: formData.password }),
+        };
+
         await axios.patch(
           `${API_BASE_URL}/users/${currentUser._id}`,
-          formData,
-          { headers: { Authorization: `Bearer ${token}` } }
+          updateData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
-        setUsers(
-          users.map((user) =>
-            user._id === currentUser._id ? { ...user, ...formData } : user
-          )
-        );
+
+        await refreshUsers();
         toast.success("Utilisateur mis à jour avec succès");
       } else {
-        // Création
-        const { data } = await axios.post(`${API_BASE_URL}/users`, formData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setUsers([...users, data.user]);
-        toast.success("Utilisateur créé avec succès");
+        // Création d'un nouvel utilisateur
+        try {
+          // Vérification de l'email
+          await axios.get(
+            `${API_BASE_URL}/users/check-email/${formData.email}`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+
+          // Création de l'utilisateur
+          await axios.post(
+            `${API_BASE_URL}/users`,
+            {
+              username: formData.username,
+              email: formData.email,
+              password: formData.password,
+              role: "user",
+              active: true,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          await refreshUsers();
+          setSearchTerm("");
+          setCurrentPage(1);
+          toast.success("Utilisateur créé avec succès");
+        } catch (error) {
+          if (error.response?.status === 400) {
+            toast.error("Cet email est déjà utilisé");
+            return;
+          }
+          throw error;
+        }
       }
+
       setIsUserModalOpen(false);
+      resetForm();
     } catch (error) {
-      toast.error(
+      console.error("Erreur:", error);
+      const errorMessage =
         error.response?.data?.message ||
-          "Une erreur s'est produite lors de l'opération"
-      );
+        error.response?.data?.error ||
+        "Une erreur s'est produite lors de l'opération";
+      toast.error(errorMessage);
     }
   };
 
-  // Pagination
-  const filteredUsers = users.filter(
-    (user) =>
-      user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter((user) => {
+    if (!user) return false;
+    const username = user.username || "";
+    const email = user.email || "";
+    return (
+      username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
@@ -189,14 +281,22 @@ const Users = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div
+        className={`flex justify-center items-center h-screen ${
+          darkMode ? "bg-gray-900" : "bg-white"
+        }`}
+      >
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div
+      className={`container mx-auto px-4 py-8 min-h-screen ${
+        darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-800"
+      }`}
+    >
       <ToastContainer
         position="top-right"
         autoClose={3000}
@@ -207,19 +307,27 @@ const Users = () => {
         pauseOnFocusLoss
         draggable
         pauseOnHover
+        theme={darkMode ? "dark" : "light"}
       />
 
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">
+      <h1
+        className={`text-3xl font-bold mb-8 ${
+          darkMode ? "text-white" : "text-gray-800"
+        }`}
+      >
         Gestion des Utilisateurs
       </h1>
 
-      {/* Barre de recherche et bouton d'ajout */}
       <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
         <div className="relative w-full md:w-96">
           <input
             type="text"
             placeholder="Rechercher par nom ou email..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              darkMode
+                ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+                : "border-gray-300"
+            }`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -245,91 +353,158 @@ const Users = () => {
         </button>
       </div>
 
-      {/* Tableau */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div
+        className={`rounded-lg shadow overflow-hidden ${
+          darkMode ? "bg-gray-800" : "bg-white"
+        }`}
+      >
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className={darkMode ? "bg-gray-700" : "bg-gray-50"}>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    darkMode ? "text-gray-300" : "text-gray-500"
+                  }`}
+                >
                   Nom
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    darkMode ? "text-gray-300" : "text-gray-500"
+                  }`}
+                >
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    darkMode ? "text-gray-300" : "text-gray-500"
+                  }`}
+                >
                   Rôle
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    darkMode ? "text-gray-300" : "text-gray-500"
+                  }`}
+                >
                   Statut
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    darkMode ? "text-gray-300" : "text-gray-500"
+                  }`}
+                >
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody
+              className={`divide-y ${
+                darkMode
+                  ? "divide-gray-700 bg-gray-800"
+                  : "divide-gray-200 bg-white"
+              }`}
+            >
               {currentUsers.length > 0 ? (
                 currentUsers.map((user) => (
-                  <tr key={user._id} className="hover:bg-gray-50">
+                  <tr
+                    key={user?._id}
+                    className={
+                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
+                    }
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                          {user.username?.charAt(0).toUpperCase()}
+                        <div
+                          className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center mr-3 ${
+                            darkMode ? "bg-gray-600" : "bg-gray-200"
+                          }`}
+                        >
+                          {user?.username?.charAt(0)?.toUpperCase() || "U"}
                         </div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {user.username}
+                        <div
+                          className={`text-sm font-medium ${
+                            darkMode ? "text-white" : "text-gray-900"
+                          }`}
+                        >
+                          {user?.username || "Inconnu"}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.email}
+                    <td
+                      className={`px-6 py-4 whitespace-nowrap text-sm ${
+                        darkMode ? "text-gray-300" : "text-gray-500"
+                      }`}
+                    >
+                      {user?.email || "Non renseigné"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.role === "admin"
-                            ? "bg-purple-100 text-purple-800"
+                          user?.role === "admin"
+                            ? darkMode
+                              ? "bg-purple-900 text-purple-200"
+                              : "bg-purple-100 text-purple-800"
+                            : darkMode
+                            ? "bg-green-900 text-green-200"
                             : "bg-green-100 text-green-800"
                         }`}
                       >
-                        {user.role}
+                        {user?.role || "user"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user.active
-                            ? "bg-green-100 text-green-800"
+                          user?.active
+                            ? darkMode
+                              ? "bg-green-900 text-green-200"
+                              : "bg-green-100 text-green-800"
+                            : darkMode
+                            ? "bg-red-900 text-red-200"
                             : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {user.active ? "Actif" : "Inactif"}
+                        {user?.active ? "Actif" : "Inactif"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() =>
-                            toggleUserStatus(user._id, user.active)
+                            toggleUserStatus(user?._id, user?.active)
                           }
                           className={`px-3 py-1 text-xs rounded transition ${
-                            user.active
-                              ? "bg-orange-100 text-orange-800 hover:bg-orange-200"
+                            user?.active
+                              ? darkMode
+                                ? "bg-orange-900 text-orange-200 hover:bg-orange-800"
+                                : "bg-orange-100 text-orange-800 hover:bg-orange-200"
+                              : darkMode
+                              ? "bg-green-900 text-green-200 hover:bg-green-800"
                               : "bg-green-100 text-green-800 hover:bg-green-200"
                           }`}
                         >
-                          {user.active ? "Désactiver" : "Activer"}
+                          {user?.active ? "Désactiver" : "Activer"}
                         </button>
                         <button
                           onClick={() => openUserModal(user)}
-                          className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition"
+                          className={`px-3 py-1 text-xs rounded hover:bg-blue-200 transition ${
+                            darkMode
+                              ? "bg-blue-900 text-blue-200 hover:bg-blue-800"
+                              : "bg-blue-100 text-blue-800"
+                          }`}
                         >
                           Modifier
                         </button>
                         <button
                           onClick={() => confirmDelete(user)}
-                          className="px-3 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition"
+                          className={`px-3 py-1 text-xs rounded hover:bg-red-200 transition ${
+                            darkMode
+                              ? "bg-red-900 text-red-200 hover:bg-red-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                          disabled={user?.role === "admin"}
                         >
                           Supprimer
                         </button>
@@ -341,7 +516,9 @@ const Users = () => {
                 <tr>
                   <td
                     colSpan="5"
-                    className="px-6 py-4 text-center text-gray-500"
+                    className={`px-6 py-4 text-center ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
                   >
                     Aucun utilisateur trouvé
                   </td>
@@ -351,14 +528,23 @@ const Users = () => {
           </table>
         </div>
 
-        {/* Pagination */}
         {filteredUsers.length > usersPerPage && (
-          <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+          <div
+            className={`px-4 py-3 flex items-center justify-between border-t ${
+              darkMode
+                ? "border-gray-700 bg-gray-800"
+                : "border-gray-200 bg-white"
+            } sm:px-6`}
+          >
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                className={`relative inline-flex items-center px-4 py-2 border rounded-md text-sm font-medium ${
+                  darkMode
+                    ? "border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600"
+                    : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                } disabled:opacity-50`}
               >
                 Précédent
               </button>
@@ -367,14 +553,22 @@ const Users = () => {
                   setCurrentPage((p) => Math.min(p + 1, totalPages))
                 }
                 disabled={currentPage === totalPages}
-                className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                className={`ml-3 relative inline-flex items-center px-4 py-2 border rounded-md text-sm font-medium ${
+                  darkMode
+                    ? "border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600"
+                    : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                } disabled:opacity-50`}
               >
                 Suivant
               </button>
             </div>
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm text-gray-700">
+                <p
+                  className={`text-sm ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
                   Affichage{" "}
                   <span className="font-medium">{indexOfFirstUser + 1}</span> à{" "}
                   <span className="font-medium">
@@ -390,7 +584,11 @@ const Users = () => {
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-sm font-medium ${
+                      darkMode
+                        ? "border-gray-600 text-gray-400 bg-gray-700 hover:bg-gray-600"
+                        : "border-gray-300 text-gray-500 bg-white hover:bg-gray-50"
+                    } disabled:opacity-50`}
                   >
                     <span className="sr-only">Précédent</span>
                     <svg
@@ -413,7 +611,11 @@ const Users = () => {
                         onClick={() => setCurrentPage(page)}
                         className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                           currentPage === page
-                            ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                            ? darkMode
+                              ? "z-10 bg-blue-900 border-blue-700 text-blue-100"
+                              : "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                            : darkMode
+                            ? "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
                             : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                         }`}
                       >
@@ -426,7 +628,11 @@ const Users = () => {
                       setCurrentPage((p) => Math.min(p + 1, totalPages))
                     }
                     disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-sm font-medium ${
+                      darkMode
+                        ? "border-gray-600 text-gray-400 bg-gray-700 hover:bg-gray-600"
+                        : "border-gray-300 text-gray-500 bg-white hover:bg-gray-50"
+                    } disabled:opacity-50`}
                   >
                     <span className="sr-only">Suivant</span>
                     <svg
@@ -449,18 +655,23 @@ const Users = () => {
         )}
       </div>
 
-      {/* Modale de suppression */}
       <Modal
         isOpen={isDeleteModalOpen}
         onRequestClose={() => setIsDeleteModalOpen(false)}
-        style={customModalStyles}
+        style={customModalStyles(darkMode)}
         contentLabel="Confirmer la suppression"
       >
-        <div className="bg-white rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-800">
+        <div
+          className={`rounded-lg p-6 ${darkMode ? "bg-gray-800" : "bg-white"}`}
+        >
+          <h2
+            className={`text-xl font-bold mb-4 ${
+              darkMode ? "text-white" : "text-gray-800"
+            }`}
+          >
             Confirmer la suppression
           </h2>
-          <p className="mb-6 text-gray-600">
+          <p className={`mb-6 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
             Êtes-vous sûr de vouloir supprimer définitivement l'utilisateur{" "}
             <strong className="text-red-600">{userToDelete?.username}</strong> ?
             Cette action est irréversible.
@@ -468,13 +679,18 @@ const Users = () => {
           <div className="flex justify-end space-x-3">
             <button
               onClick={() => setIsDeleteModalOpen(false)}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition"
+              className={`px-4 py-2 border rounded-md transition ${
+                darkMode
+                  ? "border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600"
+                  : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+              }`}
             >
               Annuler
             </button>
             <button
               onClick={handleDelete}
               className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+              disabled={userToDelete?.role === "admin"}
             >
               Confirmer la suppression
             </button>
@@ -482,86 +698,142 @@ const Users = () => {
         </div>
       </Modal>
 
-      {/* Modale utilisateur (ajout/édition) */}
       <Modal
         isOpen={isUserModalOpen}
         onRequestClose={() => setIsUserModalOpen(false)}
-        style={customModalStyles}
+        style={customModalStyles(darkMode)}
         contentLabel={
           currentUser ? "Modifier utilisateur" : "Ajouter utilisateur"
         }
       >
-        <div className="bg-white rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-800">
+        <div
+          className={`rounded-lg p-6 ${darkMode ? "bg-gray-800" : "bg-white"}`}
+        >
+          <h2
+            className={`text-xl font-bold mb-4 ${
+              darkMode ? "text-white" : "text-gray-800"
+            }`}
+          >
             {currentUser
               ? "Modifier l'utilisateur"
               : "Ajouter un nouvel utilisateur"}
           </h2>
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
+              <label
+                className={`block text-sm font-bold mb-2 ${
+                  darkMode ? "text-gray-300" : "text-gray-700"
+                }`}
+              >
                 Nom d'utilisateur
               </label>
               <input
                 type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.username
+                    ? "border-red-500"
+                    : darkMode
+                    ? "border-gray-600 bg-gray-700 text-white"
+                    : "border-gray-300"
+                }`}
                 value={formData.username}
                 onChange={(e) =>
                   setFormData({ ...formData, username: e.target.value })
                 }
                 required
               />
+              {errors.username && (
+                <p className="text-red-500 text-xs mt-1">{errors.username}</p>
+              )}
             </div>
             <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
+              <label
+                className={`block text-sm font-bold mb-2 ${
+                  darkMode ? "text-gray-300" : "text-gray-700"
+                }`}
+              >
                 Email
               </label>
               <input
                 type="email"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.email
+                    ? "border-red-500"
+                    : darkMode
+                    ? "border-gray-600 bg-gray-700 text-white"
+                    : "border-gray-300"
+                }`}
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
                 required
+                disabled={currentUser !== null}
               />
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              )}
             </div>
             {!currentUser && (
               <div className="mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2">
-                  Mot de passe
+                <label
+                  className={`block text-sm font-bold mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Mot de passe (minimum 8 caractères)
                 </label>
                 <input
                   type="password"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.password
+                      ? "border-red-500"
+                      : darkMode
+                      ? "border-gray-600 bg-gray-700 text-white"
+                      : "border-gray-300"
+                  }`}
                   value={formData.password}
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
                   }
                   required
                 />
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                )}
               </div>
             )}
-            <div className="mb-6">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Rôle
-              </label>
-              <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.role}
-                onChange={(e) =>
-                  setFormData({ ...formData, role: e.target.value })
-                }
-              >
-                <option value="user">Utilisateur</option>
-                <option value="admin">Administrateur</option>
-              </select>
-            </div>
+            {currentUser && (
+              <div className="mb-4">
+                <label
+                  className={`block text-sm font-bold mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Rôle
+                </label>
+                <div
+                  className={`w-full px-3 py-2 border rounded-md ${
+                    darkMode
+                      ? "border-gray-600 bg-gray-700 text-white"
+                      : "border-gray-300 bg-gray-100"
+                  }`}
+                >
+                  {currentUser.role === "admin"
+                    ? "Administrateur"
+                    : "Utilisateur"}
+                </div>
+              </div>
+            )}
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={() => setIsUserModalOpen(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition"
+                className={`px-4 py-2 border rounded-md transition ${
+                  darkMode
+                    ? "border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600"
+                    : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+                }`}
               >
                 Annuler
               </button>
@@ -580,5 +852,4 @@ const Users = () => {
     </div>
   );
 };
-
 export default Users;

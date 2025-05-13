@@ -47,39 +47,54 @@ exports.getUser = catchAsync(async (req, res, next) => {
 
 // Create user (for admin)
 exports.createUser = catchAsync(async (req, res, next) => {
-  const filteredBody = filterObj(
-    req.body,
-    "username",
-    "email",
-    "password",
-    "role"
-  );
+  const { email } = req.body;
 
-  // Set default role to 'user' if not provided or invalid
-  if (!filteredBody.role || !["admin", "user"].includes(filteredBody.role)) {
-    filteredBody.role = "user";
+  // 1. Vérifier si l'email existe déjà
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return next(new AppError("Cet email est déjà utilisé", 400));
   }
 
-  // Hash the password
+  // 2. Filtrer les données
+  const filteredBody = filterObj(req.body, "username", "email", "password");
+
+  // 3. Forcer le rôle user et hash le mot de passe
+  filteredBody.role = "user";
   if (filteredBody.password) {
     filteredBody.password = await bcrypt.hash(filteredBody.password, 12);
   }
-
   filteredBody.isVerified = true;
 
+  // 4. Créer l'utilisateur
   const newUser = await User.create(filteredBody);
 
-  // Remove sensitive information
+  // 5. Nettoyer les données sensibles
   newUser.password = undefined;
   newUser.verificationCode = undefined;
   newUser.resetCode = undefined;
   newUser.resetCodeExpires = undefined;
 
+  // 6. Envoyer la réponse
   res.status(201).json({
     status: "success",
     data: {
       user: newUser,
     },
+  });
+});
+
+// Nouvelle fonction pour vérifier l'email
+exports.checkEmail = catchAsync(async (req, res, next) => {
+  const user = await User.findOne({ email: req.params.email });
+  if (user) {
+    return res.status(400).json({
+      status: "fail",
+      message: "Email déjà utilisé",
+    });
+  }
+  res.status(200).json({
+    status: "success",
+    message: "Email disponible",
   });
 });
 

@@ -6,26 +6,28 @@ const router = express.Router();
 
 // Protection et restriction à l'admin
 router.use(authController.protect);
-router.use(authController.restrictTo("admin")); // Note: "admin" en minuscule pour correspondre à votre modèle
-router.patch(
-  "/:id/active-status",
-  authController.protect,
-  authController.restrictTo("admin"),
-  userController.updateUserActiveStatus
-);
+router.use(authController.restrictTo("admin"));
+
 // Routes pour la gestion des utilisateurs
 router
   .route("/")
-  .get(userController.getAllUsers) // GET /api/v1/users
-  .post(userController.createUser); // POST /api/v1/users
+  .get(userController.getAllUsers)
+  .post(userController.createUser);
 
-// Route pour obtenir les utilisateurs normaux (remplace /collaborators)
-router.route("/users-list").get(userController.getUsers); // GET /api/v1/users/users-list
+// Route pour vérifier la disponibilité d'un email
+router.get("/check-email/:email", userController.checkEmail);
 
+// Route pour obtenir les utilisateurs normaux
+router.get("/users-list", userController.getUsers);
+
+// Route pour gérer le statut actif
+router.patch("/:id/active-status", userController.updateUserActiveStatus);
+
+// Routes pour un utilisateur spécifique
 router
   .route("/:id")
-  .get(userController.getUser) // GET /api/v1/users/:id
-  .patch(userController.updateUser) // PATCH /api/v1/users/:id
-  .delete(userController.deleteUser); // DELETE /api/v1/users/:id
+  .get(userController.getUser)
+  .patch(userController.updateUser)
+  .delete(userController.deleteUser);
 
 module.exports = router;
