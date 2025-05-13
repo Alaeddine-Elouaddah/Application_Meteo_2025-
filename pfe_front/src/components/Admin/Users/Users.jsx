@@ -3,6 +3,20 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Modal from "react-modal";
+import { Tooltip } from "react-tooltip";
+import "react-tooltip/dist/react-tooltip.css";
+
+// Icônes
+import {
+  FaEdit,
+  FaTrash,
+  FaToggleOn,
+  FaToggleOff,
+  FaPlus,
+  FaSearch,
+  FaChevronLeft,
+  FaChevronRight,
+} from "react-icons/fa";
 
 const API_BASE_URL = "http://localhost:8000/api/v1";
 
@@ -45,6 +59,7 @@ const Users = ({ darkMode }) => {
     username: "",
     email: "",
     password: "",
+    newPassword: "",
   });
   const [errors, setErrors] = useState({});
   const usersPerPage = 10;
@@ -91,8 +106,8 @@ const Users = ({ darkMode }) => {
     try {
       const token = localStorage.getItem("token");
       await axios.patch(
-        `${API_BASE_URL}/users/${userId}/active-status`,
-        { active: !currentStatus },
+        `${API_BASE_URL}/users/${userId}/toggle-status`,
+        { isActive: !currentStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       await refreshUsers();
@@ -117,6 +132,7 @@ const Users = ({ darkMode }) => {
       username: "",
       email: "",
       password: "",
+      newPassword: "",
     });
     setErrors({});
   };
@@ -146,6 +162,7 @@ const Users = ({ darkMode }) => {
         username: user.username || "",
         email: user.email || "",
         password: "",
+        newPassword: "",
       });
     } else {
       setCurrentUser(null);
@@ -158,20 +175,30 @@ const Users = ({ darkMode }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.username.trim())
+    if (!formData.username.trim()) {
       newErrors.username = "Le nom d'utilisateur est requis";
-    if (!formData.email.trim()) newErrors.email = "L'email est requis";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "L'email est requis";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "L'email n'est pas valide";
     }
 
-    if (!currentUser) {
-      if (!formData.password) {
-        newErrors.password = "Le mot de passe est requis";
-      } else if (formData.password.length < 8) {
-        newErrors.password =
-          "Le mot de passe doit contenir au moins 8 caractères";
-      }
+    if (!currentUser && !formData.password) {
+      newErrors.password = "Le mot de passe est requis";
+    } else if (!currentUser && formData.password.length < 8) {
+      newErrors.password =
+        "Le mot de passe doit contenir au moins 8 caractères";
+    }
+
+    if (
+      currentUser &&
+      formData.newPassword &&
+      formData.newPassword.length < 8
+    ) {
+      newErrors.newPassword =
+        "Le nouveau mot de passe doit contenir au moins 8 caractères";
     }
 
     setErrors(newErrors);
@@ -191,11 +218,14 @@ const Users = ({ darkMode }) => {
       }
 
       if (currentUser) {
-        // Mise à jour d'un utilisateur existant
         const updateData = {
           username: formData.username,
-          ...(formData.password && { password: formData.password }),
+          email: formData.email,
         };
+
+        if (formData.newPassword) {
+          updateData.password = formData.newPassword;
+        }
 
         await axios.patch(
           `${API_BASE_URL}/users/${currentUser._id}`,
@@ -211,9 +241,7 @@ const Users = ({ darkMode }) => {
         await refreshUsers();
         toast.success("Utilisateur mis à jour avec succès");
       } else {
-        // Création d'un nouvel utilisateur
         try {
-          // Vérification de l'email
           await axios.get(
             `${API_BASE_URL}/users/check-email/${formData.email}`,
             {
@@ -221,7 +249,6 @@ const Users = ({ darkMode }) => {
             }
           );
 
-          // Création de l'utilisateur
           await axios.post(
             `${API_BASE_URL}/users`,
             {
@@ -229,7 +256,7 @@ const Users = ({ darkMode }) => {
               email: formData.email,
               password: formData.password,
               role: "user",
-              active: true,
+              isActive: true,
             },
             {
               headers: {
@@ -264,14 +291,26 @@ const Users = ({ darkMode }) => {
     }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "Jamais connecté";
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
   const filteredUsers = users.filter((user) => {
     if (!user) return false;
-    const username = user.username || "";
-    const email = user.email || "";
-    return (
-      username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+
+    const searchFields = [
+      user.username || "",
+      user.email || "",
+      user.role || "",
+      user.isActive ? "actif" : "inactif",
+      formatDate(user.lastLogin),
+    ]
+      .join(" ")
+      .toLowerCase();
+
+    return searchFields.includes(searchTerm.toLowerCase());
   });
 
   const indexOfLastUser = currentPage * usersPerPage;
@@ -322,7 +361,7 @@ const Users = ({ darkMode }) => {
         <div className="relative w-full md:w-96">
           <input
             type="text"
-            placeholder="Rechercher par nom ou email..."
+            placeholder="Rechercher par nom, email, rôle, statut..."
             className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               darkMode
                 ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
@@ -331,25 +370,15 @@ const Users = ({ darkMode }) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <svg
-            className="absolute right-3 top-2.5 h-5 w-5 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
+          <FaSearch className="absolute right-3 top-3 text-gray-400" />
         </div>
         <button
           onClick={() => openUserModal()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition whitespace-nowrap"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition whitespace-nowrap flex items-center gap-2"
+          data-tooltip-id="action-tooltip"
+          data-tooltip-content="Ajouter un nouvel utilisateur"
         >
-          + Ajouter un utilisateur
+          <FaPlus /> Ajouter un utilisateur
         </button>
       </div>
 
@@ -389,6 +418,13 @@ const Users = ({ darkMode }) => {
                   }`}
                 >
                   Statut
+                </th>
+                <th
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
+                    darkMode ? "text-gray-300" : "text-gray-500"
+                  }`}
+                >
+                  Dernière connexion
                 </th>
                 <th
                   className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
@@ -457,7 +493,7 @@ const Users = ({ darkMode }) => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user?.active
+                          user?.isActive
                             ? darkMode
                               ? "bg-green-900 text-green-200"
                               : "bg-green-100 text-green-800"
@@ -466,47 +502,72 @@ const Users = ({ darkMode }) => {
                             : "bg-red-100 text-red-800"
                         }`}
                       >
-                        {user?.active ? "Actif" : "Inactif"}
+                        {user?.isActive ? "Actif" : "Inactif"}
                       </span>
                     </td>
+                    <td
+                      className={`px-6 py-4 whitespace-nowrap text-sm ${
+                        darkMode ? "text-gray-300" : "text-gray-500"
+                      }`}
+                    >
+                      {formatDate(user?.lastLogin)}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-3">
                         <button
                           onClick={() =>
-                            toggleUserStatus(user?._id, user?.active)
+                            toggleUserStatus(user?._id, user?.isActive)
                           }
-                          className={`px-3 py-1 text-xs rounded transition ${
-                            user?.active
+                          className={`p-2 rounded-full transition ${
+                            user?.isActive
                               ? darkMode
-                                ? "bg-orange-900 text-orange-200 hover:bg-orange-800"
-                                : "bg-orange-100 text-orange-800 hover:bg-orange-200"
+                                ? "text-orange-400 hover:bg-orange-900"
+                                : "text-orange-600 hover:bg-orange-100"
                               : darkMode
-                              ? "bg-green-900 text-green-200 hover:bg-green-800"
-                              : "bg-green-100 text-green-800 hover:bg-green-200"
+                              ? "text-green-400 hover:bg-green-900"
+                              : "text-green-600 hover:bg-green-100"
                           }`}
+                          data-tooltip-id="action-tooltip"
+                          data-tooltip-content={
+                            user?.isActive
+                              ? "Désactiver l'utilisateur"
+                              : "Activer l'utilisateur"
+                          }
                         >
-                          {user?.active ? "Désactiver" : "Activer"}
+                          {user?.isActive ? (
+                            <FaToggleOn size={18} />
+                          ) : (
+                            <FaToggleOff size={18} />
+                          )}
                         </button>
                         <button
                           onClick={() => openUserModal(user)}
-                          className={`px-3 py-1 text-xs rounded hover:bg-blue-200 transition ${
+                          className={`p-2 rounded-full transition ${
                             darkMode
-                              ? "bg-blue-900 text-blue-200 hover:bg-blue-800"
-                              : "bg-blue-100 text-blue-800"
+                              ? "text-blue-400 hover:bg-blue-900"
+                              : "text-blue-600 hover:bg-blue-100"
                           }`}
+                          data-tooltip-id="action-tooltip"
+                          data-tooltip-content="Modifier l'utilisateur"
                         >
-                          Modifier
+                          <FaEdit size={16} />
                         </button>
                         <button
                           onClick={() => confirmDelete(user)}
-                          className={`px-3 py-1 text-xs rounded hover:bg-red-200 transition ${
+                          className={`p-2 rounded-full transition ${
                             darkMode
-                              ? "bg-red-900 text-red-200 hover:bg-red-800"
-                              : "bg-red-100 text-red-800"
+                              ? "text-red-400 hover:bg-red-900"
+                              : "text-red-600 hover:bg-red-100"
                           }`}
                           disabled={user?.role === "admin"}
+                          data-tooltip-id="action-tooltip"
+                          data-tooltip-content={
+                            user?.role === "admin"
+                              ? "Impossible de supprimer un admin"
+                              : "Supprimer l'utilisateur"
+                          }
                         >
-                          Supprimer
+                          <FaTrash size={16} />
                         </button>
                       </div>
                     </td>
@@ -515,7 +576,7 @@ const Users = ({ darkMode }) => {
               ) : (
                 <tr>
                   <td
-                    colSpan="5"
+                    colSpan="6"
                     className={`px-6 py-4 text-center ${
                       darkMode ? "text-gray-400" : "text-gray-500"
                     }`}
@@ -591,18 +652,7 @@ const Users = ({ darkMode }) => {
                     } disabled:opacity-50`}
                   >
                     <span className="sr-only">Précédent</span>
-                    <svg
-                      className="h-5 w-5"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <FaChevronLeft />
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                     (page) => (
@@ -635,18 +685,7 @@ const Users = ({ darkMode }) => {
                     } disabled:opacity-50`}
                   >
                     <span className="sr-only">Suivant</span>
-                    <svg
-                      className="h-5 w-5"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <FaChevronRight />
                   </button>
                 </nav>
               </div>
@@ -774,7 +813,8 @@ const Users = ({ darkMode }) => {
                 <p className="text-red-500 text-xs mt-1">{errors.email}</p>
               )}
             </div>
-            {!currentUser && (
+
+            {!currentUser ? (
               <div className="mb-4">
                 <label
                   className={`block text-sm font-bold mb-2 ${
@@ -802,7 +842,38 @@ const Users = ({ darkMode }) => {
                   <p className="text-red-500 text-xs mt-1">{errors.password}</p>
                 )}
               </div>
+            ) : (
+              <div className="mb-4">
+                <label
+                  className={`block text-sm font-bold mb-2 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  Nouveau mot de passe (laisser vide pour ne pas changer)
+                </label>
+                <input
+                  type="password"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.newPassword
+                      ? "border-red-500"
+                      : darkMode
+                      ? "border-gray-600 bg-gray-700 text-white"
+                      : "border-gray-300"
+                  }`}
+                  value={formData.newPassword}
+                  onChange={(e) =>
+                    setFormData({ ...formData, newPassword: e.target.value })
+                  }
+                  placeholder="Laisser vide pour ne pas modifier"
+                />
+                {errors.newPassword && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {errors.newPassword}
+                  </p>
+                )}
+              </div>
             )}
+
             {currentUser && (
               <div className="mb-4">
                 <label
@@ -849,7 +920,10 @@ const Users = ({ darkMode }) => {
           </form>
         </div>
       </Modal>
+
+      <Tooltip id="action-tooltip" place="top" effect="solid" />
     </div>
   );
 };
+
 export default Users;

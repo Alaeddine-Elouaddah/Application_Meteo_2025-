@@ -22,7 +22,13 @@ router.get("/users-list", userController.getUsers);
 
 // Route pour gérer le statut actif
 router.patch("/:id/active-status", userController.updateUserActiveStatus);
-
+// Route corrigée pour toggle-status
+router.patch(
+  "/:id/toggle-status",
+  authController.protect,
+  authController.restrictTo("admin"),
+  userController.toggleUserStatus
+);
 // Routes pour un utilisateur spécifique
 router
   .route("/:id")

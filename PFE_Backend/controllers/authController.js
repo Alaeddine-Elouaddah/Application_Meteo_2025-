@@ -163,6 +163,15 @@ exports.login = async (req, res) => {
       });
     }
 
+    // Vérification si le compte est désactivé
+    if (user.isActive === false) {
+      return res.status(403).json({
+        error: " Compte désactivé — contactez l’administrateur.",
+        details:
+          "Votre compte a été désactivé. Veuillez contacter l'administrateur.",
+      });
+    }
+
     const isPasswordValid = await bcrypt.compare(
       password.trim(),
       user.password
@@ -202,6 +211,10 @@ exports.login = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "4h" }
     );
+
+    // Mise à jour de la dernière connexion
+    user.lastLogin = new Date();
+    await user.save();
 
     // Réponse réussie
     const { password: _, ...userData } = user.toObject();
