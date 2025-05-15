@@ -2,6 +2,7 @@ const User = require("../models/User");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const bcrypt = require("bcryptjs");
+const sendEmail = require("../utils/sendEmail");
 
 // Utility function to filter object fields
 const filterObj = (obj, ...allowedFields) => {
@@ -239,11 +240,18 @@ exports.toggleUserStatus = async (req, res) => {
       });
     }
 
+    // Envoi de l'email
+    await sendEmail(
+      user.email,
+      `Statut compte ${user.isActive ? "activé" : "désactivé"}`,
+      `Votre compte a été ${
+        user.isActive ? "activé" : "désactivé"
+      } avec succès.`
+    );
+
     res.status(200).json({
       status: "success",
-      data: {
-        user,
-      },
+      data: { user },
     });
   } catch (err) {
     res.status(400).json({

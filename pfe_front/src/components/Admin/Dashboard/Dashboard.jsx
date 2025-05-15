@@ -1327,7 +1327,6 @@ const Dashboard = ({ darkMode }) => {
             <h3 className={`text-xl font-semibold ${textClass} mb-4`}>
               Graphiques détaillés
             </h3>
-
             <div className="flex flex-wrap gap-2 mb-6">
               <button
                 onClick={() => setSelectedChart("temperature")}
