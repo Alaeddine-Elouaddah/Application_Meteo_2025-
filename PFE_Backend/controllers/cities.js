@@ -101,7 +101,7 @@ module.exports = [
   { city: "Missour", lat: 33.0464, lon: -3.9894 },
   { city: "Moulay Abdallah", lat: 33.1947, lon: -8.5333 },
   { city: "Mohammédia", lat: 33.6861, lon: -7.3829 },
-  ,
+
   { city: "Moulay Bousselham", lat: 34.0, lon: -6.5 },
   { city: "Moulay Idriss", lat: 34.0, lon: -5.5 },
   { city: "Nador", lat: 35.1688, lon: -2.9335 },
