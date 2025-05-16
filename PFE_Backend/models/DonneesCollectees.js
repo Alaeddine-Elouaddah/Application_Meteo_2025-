@@ -2,52 +2,112 @@ const mongoose = require("mongoose");
 
 const DonneesCollecteesSchema = new mongoose.Schema(
   {
-    city: { type: String, required: true, unique: true },
-    country: { type: String, required: true },
-    date: String, // Format "DD/MM/YYYY"
-
-    coord: {
-      lat: { type: Number },
-      lon: { type: Number },
+    city: {
+      id: Number,
+      name: String,
+      country: String,
+      coord: {
+        lat: Number,
+        lon: Number,
+      },
+      timezone: Number,
+      population: Number,
     },
-    temperature: { type: Number },
-    feelsLike: { type: Number },
-    humidity: { type: Number },
-    pressure: { type: Number },
-    windSpeed: { type: Number },
-    windDeg: { type: Number },
-    condition: { type: String },
-    icon: { type: String },
-    rain: { type: Number, default: 0 },
-    snow: { type: Number, default: 0 },
-    clouds: { type: Number },
-    airQuality: { type: Object },
-    uvIndex: { type: Number },
-    alerts: { type: Array },
-    forecast: {
-      type: [
-        {
-          date: String, // Format "DD/MM/YYYY"
-          dayName: String, // "Lundi", "Mardi", etc.
-          temp: Number,
-          tempMin: Number,
-          tempMax: Number,
-          condition: String,
-          icon: String,
-          humidity: Number,
-          windSpeed: Number,
-          createdAt: { type: Date, default: Date.now },
+    current: {
+      dt: Number,
+      date: String,
+      timestamp: Number,
+      temp: Number,
+      feels_like: Number,
+      temp_min: Number,
+      temp_max: Number,
+      humidity: Number,
+      pressure: Number,
+      weather: {
+        id: Number,
+        main: String,
+        description: String,
+        icon: String,
+      },
+      wind: {
+        speed: Number,
+        deg: Number,
+        gust: Number,
+      },
+      rain: Number,
+      snow: Number,
+      clouds: Number,
+      uvi: Number,
+      air_quality: Object,
+      sunrise: Number,
+      sunset: Number,
+    },
+    forecast: [
+      {
+        dt: Number,
+        date: String,
+        dayName: String,
+        temp: Number,
+        feels_like: Number,
+        temp_min: Number,
+        temp_max: Number,
+        humidity: Number,
+        pressure: Number,
+        weather: [
+          {
+            id: Number,
+            main: String,
+            description: String,
+            icon: String,
+          },
+        ],
+        wind: {
+          speed: Number,
+          deg: Number,
+          gust: Number,
         },
-      ],
-      default: [],
-    },
+        pop: Number,
+        rain: Number,
+        snow: Number,
+        clouds: Number,
+        hourly: [
+          {
+            dt: Number,
+            time: String,
+            temp: Number,
+            feels_like: Number,
+            pressure: Number,
+            humidity: Number,
+            weather: [
+              {
+                id: Number,
+                main: String,
+                description: String,
+                icon: String,
+              },
+            ],
+            wind_speed: Number,
+            wind_deg: Number,
+            clouds: Number,
+            pop: Number,
+            rain: Number,
+            snow: Number,
+          },
+        ],
+      },
+    ],
+    alerts: [
+      {
+        sender_name: String,
+        event: String,
+        start: Number,
+        end: Number,
+        description: String,
+      },
+    ],
     lastUpdated: Date,
   },
   { timestamps: true }
 );
-
-// Index pour les recherches fréquentes
-DonneesCollecteesSchema.index({ city: 1 });
-DonneesCollecteesSchema.index({ "forecast.date": 1 });
 
 module.exports = mongoose.model("DonneesCollectees", DonneesCollecteesSchema);

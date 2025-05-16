@@ -127,7 +127,6 @@ module.exports = [
   { city: "Tafraout", lat: 29.7167, lon: -9.0 },
   { city: "Tanger", lat: 35.7595, lon: -5.8339 },
   { city: "Tan-Tan", lat: 28.438, lon: -11.103 },
-
   { city: "Taourirt", lat: 34.4136, lon: -2.8975 },
   { city: "Taroudant", lat: 30.4703, lon: -8.8769 },
   { city: "Taza", lat: 34.213, lon: -4.0083 },
