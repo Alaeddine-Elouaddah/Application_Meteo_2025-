@@ -196,15 +196,21 @@ const insertAllCities = async (req, res) => {
         });
       }
     }
-    res.json(results);
+    res.status(200).json({ success: true, data: results });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Erreur lors de l'insertion des villes",
+    });
   }
 };
 
-const addNextDayForecast = async () => {
+const addNextDayForecast = async (req, res) => {
   try {
     const allCities = await DonneesCollectees.find({});
+    const results = [];
+
     for (const cityDoc of allCities) {
       try {
         const forecast = await axios.get(
@@ -222,14 +228,35 @@ const addNextDayForecast = async () => {
             { _id: cityDoc._id },
             { $push: { forecast: nextDayForecast } }
           );
+
+          console.log(`La ville est ${cityDoc.city.name} => Succès`);
+          results.push({
+            city: cityDoc.city.name,
+            status: "success",
+            forecast: nextDayForecast.date,
+          });
         }
         await new Promise((resolve) => setTimeout(resolve, 1500));
       } catch (error) {
-        console.error(`Erreur pour ${cityDoc.city.name}:`, error.message);
+        console.log(
+          `La ville est ${cityDoc.city.name} => Erreur: ${error.message}`
+        );
+        results.push({
+          city: cityDoc.city.name,
+          status: "failed",
+          error: error.message,
+        });
       }
     }
+
+    res.status(200).json({ success: true, data: results });
   } catch (error) {
-    console.error("Erreur globale:", error);
+    console.log(`Erreur globale: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Erreur lors de l'ajout des prévisions",
+    });
   }
 };
 
@@ -239,27 +266,72 @@ const getTodayForecast = async (req, res) => {
       { "city.name": req.params.city },
       { forecast: { $elemMatch: { date: moment().format("DD/MM/YYYY") } } }
     );
-    res.json(data.forecast[0]);
+
+    if (!data || !data.forecast || data.forecast.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Données non trouvées pour aujourd'hui",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: data.forecast[0],
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Erreur lors de la récupération des données",
+    });
   }
 };
 
 const getHourlyData = async (req, res) => {
   try {
+    const cityName = req.params.city;
+    const date = req.params.date || moment().format("DD/MM/YYYY");
+
+    if (!cityName) {
+      return res.status(400).json({
+        success: false,
+        message: "Le nom de la ville est requis",
+      });
+    }
+
     const data = await DonneesCollectees.findOne(
-      { "city.name": req.params.city },
+      { "city.name": cityName },
       {
         forecast: {
-          $elemMatch: {
-            date: req.params.date || moment().format("DD/MM/YYYY"),
-          },
+          $elemMatch: { date: date },
         },
       }
     );
-    res.json(data.forecast[0].hourly);
+
+    if (!data || !data.forecast || data.forecast.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: `Aucune donnée trouvée pour ${cityName} à la date ${date}`,
+      });
+    }
+
+    if (!data.forecast[0].hourly) {
+      return res.status(404).json({
+        success: false,
+        message: `Données horaires non disponibles pour ${cityName} à la date ${date}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: data.forecast[0].hourly,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Erreur lors de la récupération des données horaires",
+    });
   }
 };
 

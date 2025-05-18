@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./PFE_Backend
+      dockerfile: Dockerfile
+    container_name: pfe_backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+    volumes:
+      - ./PFE_Backend:/app
+      - /app/node_modules
+    networks:
+      - pfe_network
+
+  frontend:
+    build:
+      context: ./pfe_front
+      dockerfile: Dockerfile
+    container_name: pfe_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - pfe_network
+
+networks:
+  pfe_network:
+    driver: bridge
