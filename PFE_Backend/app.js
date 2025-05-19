@@ -45,6 +45,7 @@ const profileRoutes = require("./routes/profileRoutes");
 const userRoutes = require("./routes/userRoutes");
 const sourceMeteoRoutes = require("./routes/sourceMeteoRoutes");
 const donneesRoutes = require("./routes/donneesCollecteesRoutes");
+const alertRoutes = require("./routes/alertRoutes"); // Ajout des routes d'alertes
 
 // Utilisation des routes
 app.use("/api", donneesRoutes);
@@ -53,7 +54,7 @@ app.use("/api/v1/users", userRoutes); // ✅ correctement utilisé
 app.use("/api/auth", authRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/api/profile", profileRoutes);
-
+app.use("/api/alerts", alertRoutes); // Ajout des routes d'alertes
 // Route de test
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "OK", timestamp: new Date() });

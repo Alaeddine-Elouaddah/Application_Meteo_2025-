@@ -25,7 +25,9 @@ import {
   WiStrongWind,
   WiBarometer,
   WiRain,
+  WiSnow,
 } from "react-icons/wi";
+import axios from "axios";
 
 ChartJS.register(
   CategoryScale,
@@ -35,10 +37,94 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  -Legend
+  Legend
 );
 
-const Comparisons = () => {
+const translations = {
+  fr: {
+    title: "Comparaisons",
+    loading: "Chargement...",
+    error: "Erreur lors du chargement des données",
+    noData: "Aucune donnée disponible",
+    date: "Date",
+    city: "Ville",
+    temperature: "Température",
+    humidity: "Humidité",
+    wind: "Vent",
+    pressure: "Pression",
+    rain: "Pluie",
+    forecast: "Prévision",
+    actual: "Réel",
+    difference: "Différence",
+    searchPlaceholder: "Rechercher une ville...",
+    search: "Rechercher",
+    currentCity: "Ville actuelle",
+    dailyComparison: "Comparaison journalière",
+    hourlyComparison: "Comparaison horaire",
+    accuracy: "Précision",
+    details: "Détails",
+    notifications: "Notifications",
+    alerts: "Alertes météo",
+    noAlerts: "Aucune alerte",
+    refresh: "Actualiser",
+  },
+  en: {
+    title: "Comparisons",
+    loading: "Loading...",
+    error: "Error loading data",
+    noData: "No data available",
+    date: "Date",
+    city: "City",
+    temperature: "Temperature",
+    humidity: "Humidity",
+    wind: "Wind",
+    pressure: "Pressure",
+    rain: "Rain",
+    forecast: "Forecast",
+    actual: "Actual",
+    difference: "Difference",
+    searchPlaceholder: "Search for a city...",
+    search: "Search",
+    currentCity: "Current City",
+    dailyComparison: "Daily Comparison",
+    hourlyComparison: "Hourly Comparison",
+    accuracy: "Accuracy",
+    details: "Details",
+    notifications: "Notifications",
+    alerts: "Weather Alerts",
+    noAlerts: "No alerts",
+    refresh: "Refresh",
+  },
+  ar: {
+    title: "المقارنات",
+    loading: "جاري التحميل...",
+    error: "خطأ في تحميل البيانات",
+    noData: "لا توجد بيانات متاحة",
+    date: "التاريخ",
+    city: "المدينة",
+    temperature: "درجة الحرارة",
+    humidity: "الرطوبة",
+    wind: "الرياح",
+    pressure: "الضغط",
+    rain: "الأمطار",
+    forecast: "التنبؤ",
+    actual: "الفعلي",
+    difference: "الفرق",
+    searchPlaceholder: "ابحث عن مدينة...",
+    search: "بحث",
+    currentCity: "المدينة الحالية",
+    dailyComparison: "المقارنة اليومية",
+    hourlyComparison: "المقارنة الساعية",
+    accuracy: "الدقة",
+    details: "التفاصيل",
+    notifications: "الإشعارات",
+    alerts: "تنبيهات الطقس",
+    noAlerts: "لا توجد تنبيهات",
+    refresh: "تحديث",
+  },
+};
+
+const Comparisons = ({ darkMode }) => {
   const API_KEY = "6e601e5bf166b100420a3cf427368540";
   const [city, setCity] = useState("Agadir");
   const [forecastData, setForecastData] = useState(null);
@@ -50,9 +136,19 @@ const Comparisons = () => {
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [geolocationError, setGeolocationError] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [language, setLanguage] = useState("fr");
+
+  const t = translations[language];
+
+  const token = localStorage.getItem("token");
+  const api = axios.create({
+    baseURL: "http://localhost:8000/api",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   // Classes dynamiques pour le dark mode
   const bgClass = darkMode ? "bg-gray-900" : "bg-gray-50";
@@ -82,12 +178,14 @@ const Comparisons = () => {
             if (data && data.length > 0) {
               setCity(data[0].name);
               setSearchInput(`${data[0].name}, ${data[0].country}`);
-              fetchWeatherAlerts(latitude, longitude);
+              // Fetch weather data for the detected city
+              await fetchWeatherData(data[0].name);
             } else {
               setCity("Agadir");
               setGeolocationError(
                 "Impossible de déterminer votre ville. Utilisation de Agadir par défaut."
               );
+              await fetchWeatherData("Agadir");
             }
           } catch (err) {
             console.error("Erreur de récupération du nom de la ville:", err);
@@ -95,6 +193,7 @@ const Comparisons = () => {
             setGeolocationError(
               "Erreur lors de la récupération du nom de la ville. Utilisation de Agadir par défaut."
             );
+            await fetchWeatherData("Agadir");
           } finally {
             setLoading(false);
           }
@@ -105,6 +204,7 @@ const Comparisons = () => {
           setGeolocationError(
             "Impossible d'obtenir votre position. Utilisation de Agadir par défaut."
           );
+          fetchWeatherData("Agadir");
           setLoading(false);
         }
       );
@@ -113,22 +213,65 @@ const Comparisons = () => {
       setGeolocationError(
         "La géolocalisation n'est pas supportée par votre navigateur. Utilisation de Agadir par défaut."
       );
+      fetchWeatherData("Agadir");
       setLoading(false);
     }
   };
 
-  // Récupérer les alertes météo
-  const fetchWeatherAlerts = async (lat, lon) => {
+  // Récupérer les données météo
+  const fetchWeatherData = async (cityName) => {
     try {
-      const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,daily&appid=${API_KEY}`
+      setLoading(true);
+      setError(null);
+
+      // Récupérer les données de prévision horaire
+      const forecastResponse = await fetch(
+        `http://localhost:8000/api/hourly/${cityName}`
       );
-      const data = await response.json();
-      if (data.alerts) {
-        setAlerts(data.alerts);
-      }
+      if (!forecastResponse.ok)
+        throw new Error("Erreur de récupération des prévisions horaires");
+      const forecastJson = await forecastResponse.json();
+      setForecastData(forecastJson.data);
+
+      // Récupérer les données du jour
+      const todayResponse = await fetch(
+        `http://localhost:8000/api/Today/${cityName}`
+      );
+      if (!todayResponse.ok)
+        throw new Error("Erreur de récupération des données du jour");
+      const todayJson = await todayResponse.json();
+      setTodayData(todayJson.data);
+
+      // Récupérer les données actuelles
+      const actualResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/forecast?q=${cityName}&units=metric&appid=${API_KEY}`
+      );
+      if (!actualResponse.ok)
+        throw new Error("Erreur de récupération des données actuelles");
+      const actualJson = await actualResponse.json();
+      setActualData(actualJson.list);
+
+      setLoading(false);
     } catch (err) {
-      console.error("Erreur de récupération des alertes:", err);
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  // Sélectionner une ville
+  const handleCitySelect = async (selectedCity) => {
+    setCity(selectedCity.name);
+    setSearchInput(`${selectedCity.name}, ${selectedCity.country}`);
+    setSearchSuggestions([]);
+    setShowSuggestions(false);
+    await fetchWeatherData(selectedCity.name);
+  };
+
+  // Rechercher une ville
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    if (searchInput.trim() && searchSuggestions.length > 0) {
+      await handleCitySelect(searchSuggestions[0]);
     }
   };
 
@@ -151,133 +294,28 @@ const Comparisons = () => {
     }
   };
 
-  // Sélectionner une ville
-  const handleCitySelect = (selectedCity) => {
-    setCity(selectedCity.name);
-    setSearchInput(`${selectedCity.name}, ${selectedCity.country}`);
-    setSearchSuggestions([]);
-    setShowSuggestions(false);
-    fetchWeatherAlerts(selectedCity.lat, selectedCity.lon);
-  };
-
-  // Rechercher une ville
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchInput.trim() && searchSuggestions.length > 0) {
-      handleCitySelect(searchSuggestions[0]);
-    }
-  };
-
   // Basculer les notifications
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
   };
 
-  // Récupérer les données météo
+  // Initialiser les données au chargement du composant
   useEffect(() => {
-    const fetchInitialData = async () => {
-      try {
-        setLoading(true);
-
-        // Détecter la localisation automatiquement au chargement
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              try {
-                const { latitude, longitude } = position.coords;
-                const response = await fetch(
-                  `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${API_KEY}`
-                );
-                const data = await response.json();
-                if (data && data.length > 0) {
-                  setCity(data[0].name);
-                  setSearchInput(`${data[0].name}, ${data[0].country}`);
-                } else {
-                  // Si la localisation échoue, utiliser El Jadida par défaut
-                  setCity("Agadir");
-                }
-              } catch (err) {
-                console.error(
-                  "Erreur de récupération du nom de la ville:",
-                  err
-                );
-                setCity("Agadir");
-              } finally {
-                // Charger les données météo après avoir défini la ville
-                fetchWeatherData();
-              }
-            },
-            (err) => {
-              console.error("Erreur de géolocalisation:", err);
-              setCity("Agadir");
-              fetchWeatherData();
-            }
-          );
-        } else {
-          // Si la géolocalisation n'est pas supportée, utiliser El Jadida par défaut
-          setCity("Agadir");
-          fetchWeatherData();
-        }
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
-    // Fonction pour charger les données météo
-    const fetchWeatherData = async () => {
-      try {
-        // Récupérer les données de prévision horaire
-        const forecastResponse = await fetch(
-          `http://localhost:8000/api/hourly/${city}`
-        );
-        if (!forecastResponse.ok)
-          throw new Error("Erreur de récupération des prévisions horaires");
-        const forecastJson = await forecastResponse.json();
-        setForecastData(forecastJson.data);
-
-        // Récupérer les données du jour
-        const todayResponse = await fetch(
-          `http://localhost:8000/api/Today/${city}`
-        );
-        if (!todayResponse.ok)
-          throw new Error("Erreur de récupération des données du jour");
-        const todayJson = await todayResponse.json();
-        setTodayData(todayJson.data);
-
-        // Récupérer les données actuelles
-        const actualResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${API_KEY}`
-        );
-        if (!actualResponse.ok)
-          throw new Error("Erreur de récupération des données actuelles");
-        const actualJson = await actualResponse.json();
-        setActualData(actualJson.list);
-
-        setLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setLoading(false);
-      }
-    };
-
-    fetchInitialData();
+    detectLocation();
   }, []);
 
   if (loading) {
     return (
-      <div
-        className={`flex flex-col items-center justify-center h-screen ${bgClass}`}
-      >
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-        <p className={`text-lg ${textClass}`}>Chargement des données...</p>
+        <p className="text-lg text-gray-800">Chargement des données...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className={`flex items-center justify-center h-screen ${bgClass}`}>
+      <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-md">
           <div className="flex items-center">
             <FiAlertCircle className="mr-2" size={20} />
@@ -297,7 +335,7 @@ const Comparisons = () => {
 
   if (!forecastData || !todayData || !actualData) {
     return (
-      <div className={`flex items-center justify-center h-screen ${bgClass}`}>
+      <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded max-w-md">
           <div className="flex items-center">
             <FiInfo className="mr-2" size={20} />
@@ -383,23 +421,34 @@ const Comparisons = () => {
   };
 
   // Trouver les données actuelles pour aujourd'hui
-  const todayActual = actualData.find(
+  const todayActual = actualData?.find(
     (item) =>
       new Date(item.dt * 1000).toLocaleDateString() ===
       new Date(todayData.dt * 1000).toLocaleDateString()
-  );
+  ) || {
+    main: {
+      temp: 0,
+      humidity: 0,
+      pressure: 0,
+    },
+    wind: {
+      speed: 0,
+    },
+  };
 
-  // Calculer les différences journalières
-  const todayTempDiff = (todayForecast.temp - todayActual.main.temp).toFixed(1);
-  const todayHumidityDiff = (
-    todayForecast.humidity - todayActual.main.humidity
-  ).toFixed(1);
-  const todayWindDiff = (
-    todayForecast.wind_speed - todayActual.wind.speed
-  ).toFixed(1);
-  const todayPressureDiff = (
-    todayForecast.pressure - todayActual.main.pressure
-  ).toFixed(1);
+  // Calculer les différences journalières avec des valeurs par défaut
+  const todayTempDiff = todayActual
+    ? (todayForecast.temp - todayActual.main.temp).toFixed(1)
+    : "0.0";
+  const todayHumidityDiff = todayActual
+    ? (todayForecast.humidity - todayActual.main.humidity).toFixed(1)
+    : "0.0";
+  const todayWindDiff = todayActual
+    ? (todayForecast.wind_speed - todayActual.wind.speed).toFixed(1)
+    : "0.0";
+  const todayPressureDiff = todayActual
+    ? (todayForecast.pressure - todayActual.main.pressure).toFixed(1)
+    : "0.0";
 
   // Configurations des graphiques horaires
   const tempChartData = {
@@ -643,68 +692,37 @@ const Comparisons = () => {
     },
   };
 
+  // Ajouter le bouton de paramètres dans la barre supérieure
+  const renderTopBar = () => (
+    <div className="flex justify-between items-center mb-4">
+      <h1 className={`text-2xl font-bold ${textClass}`}>{t.title}</h1>
+      <div className="flex items-center space-x-4">
+        {alerts.length > 0 && (
+          <button
+            onClick={toggleNotifications}
+            className={`p-2 rounded-full ${
+              darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+            } relative`}
+          >
+            <FiBell className="h-6 w-6" />
+            <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
+              {alerts.length}
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className={`min-h-screen ${bgClass} p-4 md:p-6`}>
       <div className="max-w-7xl mx-auto">
+        {renderTopBar()}
+
         {/* Barre de recherche améliorée */}
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center mb-4 md:mb-0">
-            <h1 className={`text-2xl font-bold ${textClass}`}>
-              Dashboard Météo Comparaison
-            </h1>
-            {alerts.length > 0 && (
-              <div className="relative ml-4">
-                <button
-                  onClick={toggleNotifications}
-                  className={`p-2 rounded-full ${
-                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                  } relative`}
-                >
-                  <FiBell className="h-6 w-6" />
-                  <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
-                    {alerts.length}
-                  </span>
-                </button>
-                {showNotifications && (
-                  <div
-                    className={`absolute right-0 mt-2 w-72 rounded-md shadow-lg ${
-                      darkMode ? "bg-gray-700" : "bg-white"
-                    } ring-1 ring-black ring-opacity-5 z-20`}
-                  >
-                    <div
-                      className={`p-4 ${
-                        darkMode ? "bg-gray-700" : "bg-white"
-                      } rounded-md`}
-                    >
-                      <h3 className={`text-lg font-medium ${textClass} mb-2`}>
-                        Alertes Météo
-                      </h3>
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {alerts.map((alert, index) => (
-                          <div
-                            key={index}
-                            className={`p-3 rounded ${
-                              darkMode ? "bg-gray-600" : "bg-yellow-50"
-                            }`}
-                          >
-                            <h4 className={`font-bold ${textClass}`}>
-                              {alert.event}
-                            </h4>
-                            <p className={`text-sm ${secondaryTextClass}`}>
-                              {alert.description}
-                            </p>
-                            <p className="text-xs mt-1 text-gray-500">
-                              Du {new Date(alert.start * 1000).toLocaleString()}{" "}
-                              au {new Date(alert.end * 1000).toLocaleString()}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            <h1 className={`text-2xl font-bold ${textClass}`}>{t.title}</h1>
           </div>
 
           <form onSubmit={handleSearch} className="flex w-full md:w-auto">
@@ -1223,8 +1241,6 @@ const Comparisons = () => {
               </table>
             </div>
           </div>
-
-          {/* Résumé statistique */}
         </div>
       </div>
     </div>
