@@ -192,23 +192,45 @@ const Alert = ({ darkMode }) => {
     openModal();
   };
 
-  const getTypeIcon = (type) => {
+  const getTypeIcon = (type, isActive = true) => {
     const iconSize = 36;
-    const iconColor = darkMode ? "#ffffff" : "#000000";
+
+    // Couleurs thématiques pour chaque type d'alerte
+    const colors = {
+      temperature: "#FF5733", // Orange/rouge pour température
+      humidity: "#3498DB", // Bleu pour humidité
+      wind: "#2ECC71", // Vert pour vent
+      pressure: "#9B59B6", // Violet pour pression
+      rain: "#2980B9", // Bleu foncé pour pluie
+      default: darkMode ? "#FFFFFF" : "#000000",
+    };
+
+    // Opacité réduite si l'alerte est inactive
+    const opacity = isActive ? "opacity-100" : "opacity-60";
+
+    const iconColor = colors[type] || colors.default;
 
     switch (type) {
       case "temperature":
-        return <WiDaySunny size={iconSize} color={iconColor} />;
+        return (
+          <WiDaySunny size={iconSize} color={iconColor} className={opacity} />
+        );
       case "humidity":
-        return <WiHumidity size={iconSize} color={iconColor} />;
+        return (
+          <WiHumidity size={iconSize} color={iconColor} className={opacity} />
+        );
       case "wind":
-        return <WiStrongWind size={iconSize} color={iconColor} />;
+        return (
+          <WiStrongWind size={iconSize} color={iconColor} className={opacity} />
+        );
       case "pressure":
-        return <WiBarometer size={iconSize} color={iconColor} />;
+        return (
+          <WiBarometer size={iconSize} color={iconColor} className={opacity} />
+        );
       case "rain":
-        return <WiRain size={iconSize} color={iconColor} />;
+        return <WiRain size={iconSize} color={iconColor} className={opacity} />;
       default:
-        return <FiBell size={iconSize} color={iconColor} />;
+        return <FiBell size={iconSize} color={iconColor} className={opacity} />;
     }
   };
 
@@ -561,7 +583,9 @@ const Alert = ({ darkMode }) => {
             <div className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex items-center">
-                  <div className="mr-3">{getTypeIcon(alert.type)}</div>
+                  <div className="mr-3">
+                    {getTypeIcon(alert.type, alert.isActive)}
+                  </div>
                   <div>
                     <h3
                       className={`text-lg font-semibold ${

@@ -64,9 +64,7 @@ const Dashboard = ({ darkMode }) => {
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [geolocationError, setGeolocationError] = useState(null);
-
   const API_KEY = "6e601e5bf166b100420a3cf427368540";
-
   // Fonction pour détecter la localisation
   const detectLocation = () => {
     if (navigator.geolocation) {

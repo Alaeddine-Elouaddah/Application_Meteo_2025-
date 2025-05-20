@@ -22,6 +22,8 @@ import {
   Sun,
   Moon,
   LogOut,
+  Menu,
+  X,
 } from "lucide-react";
 
 // Hook personnalisé pour gérer le dark mode
@@ -82,6 +84,7 @@ const SidebarItem = ({ icon: Icon, label, to, active, sidebarOpen }) => {
 
 const Admin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activePath, setActivePath] = useState("");
   const [darkMode, setDarkMode] = useDarkMode();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -103,6 +106,7 @@ const Admin = () => {
   }, [location.pathname]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const toggleMobileSidebar = () => setMobileSidebarOpen(!mobileSidebarOpen);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -118,33 +122,57 @@ const Admin = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      {/* Mobile sidebar backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={toggleMobileSidebar}
+        ></div>
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out flex flex-col ${
+        className={`fixed lg:static bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out flex flex-col z-50 h-full ${
           sidebarOpen ? "w-64" : "w-20"
-        }`}
+        } ${mobileSidebarOpen ? "left-0" : "-left-full lg:left-0"}`}
       >
         <div className="flex flex-col h-full p-4">
           <div className="flex items-center justify-between mb-8">
             {sidebarOpen ? (
-              <Link
-                to="/admin"
-                className="text-xl font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors flex items-center"
-              >
-                <Home className="w-5 h-5 mr-2" />
-                Admin Panel
-              </Link>
+              <div className="flex items-center justify-between w-full">
+                <Link
+                  to="/admin"
+                  className="text-xl font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors flex items-center"
+                >
+                  <Home className="w-5 h-5 mr-2" />
+                  Admin Panel
+                </Link>
+                <button
+                  onClick={toggleMobileSidebar}
+                  className="lg:hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             ) : (
-              <Link
-                to="/admin"
-                className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-              >
-                <Home className="w-5 h-5 text-white" />
-              </Link>
+              <div className="flex items-center justify-between w-full">
+                <Link
+                  to="/admin"
+                  className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                >
+                  <Home className="w-5 h-5 text-white" />
+                </Link>
+                <button
+                  onClick={toggleMobileSidebar}
+                  className="lg:hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             )}
             <button
               onClick={toggleSidebar}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
+              className="hidden lg:block p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
               aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             >
               {sidebarOpen ? (
@@ -199,13 +227,21 @@ const Admin = () => {
       <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         {/* Header */}
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center transition-colors duration-200">
-          <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-200 transition-colors duration-200">
-            {activePath === "/admin" && "Tableau de bord"}
-            {activePath.startsWith("/admin/comparisons") && "Comparaisons"}
-            {activePath.startsWith("/admin/alerts") && "Alertes météo"}
-            {activePath.startsWith("/admin/users") && "Utilisateurs"}
-            {activePath.startsWith("/admin/settings") && "Paramètres"}
-          </h1>
+          <div className="flex items-center">
+            <button
+              onClick={toggleMobileSidebar}
+              className="lg:hidden p-2 mr-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors duration-200"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-200 transition-colors duration-200">
+              {activePath === "/admin" && "Tableau de bord"}
+              {activePath.startsWith("/admin/comparisons") && "Comparaisons"}
+              {activePath.startsWith("/admin/alerts") && "Alertes météo"}
+              {activePath.startsWith("/admin/users") && "Utilisateurs"}
+              {activePath.startsWith("/admin/settings") && "Paramètres"}
+            </h1>
+          </div>
 
           <div className="flex items-center space-x-4">
             <button
@@ -301,8 +337,7 @@ const Admin = () => {
                 <div
                   className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 transition-colors duration-200"
                   style={{
-                    zIndex: 1000, // Valeur élevée pour s'assurer qu'il apparaît au-dessus
-                    position: "fixed", // Utilisation de fixed pour éviter les problèmes de positionnement
+                    zIndex: 1000,
                   }}
                 >
                   <div className="p-4 border-b border-gray-200 dark:border-gray-600">
@@ -367,7 +402,7 @@ const Admin = () => {
         </header>
 
         {/* Page Content */}
-        <div className="p-6 max-w-7xl mx-auto transition-colors duration-200">
+        <div className="p-4 lg:p-6 max-w-7xl mx-auto transition-colors duration-200">
           <Routes>
             <Route index element={<Dashboard darkMode={darkMode} />} />
             <Route

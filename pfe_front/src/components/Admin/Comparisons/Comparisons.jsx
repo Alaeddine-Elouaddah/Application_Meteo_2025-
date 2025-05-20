@@ -692,33 +692,9 @@ const Comparisons = ({ darkMode }) => {
     },
   };
 
-  // Ajouter le bouton de paramètres dans la barre supérieure
-  const renderTopBar = () => (
-    <div className="flex justify-between items-center mb-4">
-      <h1 className={`text-2xl font-bold ${textClass}`}>{t.title}</h1>
-      <div className="flex items-center space-x-4">
-        {alerts.length > 0 && (
-          <button
-            onClick={toggleNotifications}
-            className={`p-2 rounded-full ${
-              darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-            } relative`}
-          >
-            <FiBell className="h-6 w-6" />
-            <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
-              {alerts.length}
-            </span>
-          </button>
-        )}
-      </div>
-    </div>
-  );
-
   return (
     <div className={`min-h-screen ${bgClass} p-4 md:p-6`}>
       <div className="max-w-7xl mx-auto">
-        {renderTopBar()}
-
         {/* Barre de recherche améliorée */}
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center mb-4 md:mb-0">

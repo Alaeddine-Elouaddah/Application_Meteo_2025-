@@ -332,7 +332,7 @@ const Users = ({ darkMode }) => {
 
   return (
     <div
-      className={`container mx-auto px-4 py-8 min-h-screen ${
+      className={`container mx-auto px-2 sm:px-4 py-4 min-h-screen ${
         darkMode ? "bg-gray-900 text-gray-100" : "bg-gray-50 text-gray-800"
       }`}
     >
@@ -350,19 +350,19 @@ const Users = ({ darkMode }) => {
       />
 
       <h1
-        className={`text-3xl font-bold mb-8 ${
+        className={`text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 ${
           darkMode ? "text-white" : "text-gray-800"
         }`}
       >
         Gestion des Utilisateurs
       </h1>
 
-      <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
-        <div className="relative w-full md:w-96">
+      <div className="flex flex-col sm:flex-row justify-between mb-4 gap-2 sm:gap-4">
+        <div className="relative w-full sm:w-64 md:w-96">
           <input
             type="text"
-            placeholder="Rechercher par nom, email, rôle, statut..."
-            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            placeholder="Rechercher..."
+            className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               darkMode
                 ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                 : "border-gray-300"
@@ -370,238 +370,236 @@ const Users = ({ darkMode }) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <FaSearch className="absolute right-3 top-3 text-gray-400" />
+          <FaSearch className="absolute right-3 top-2.5 text-gray-400" />
         </div>
         <button
           onClick={() => openUserModal()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition whitespace-nowrap flex items-center gap-2"
+          className="px-3 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition whitespace-nowrap flex items-center justify-center gap-2"
           data-tooltip-id="action-tooltip"
           data-tooltip-content="Ajouter un nouvel utilisateur"
         >
-          <FaPlus /> Ajouter un utilisateur
+          <FaPlus className="text-xs sm:text-sm" />
+          <span className="hidden sm:inline">Ajouter un utilisateur</span>
+          <span className="sm:hidden">Ajouter</span>
         </button>
       </div>
 
       <div
-        className={`rounded-lg shadow overflow-hidden ${
+        className={`rounded-lg shadow overflow-x-auto ${
           darkMode ? "bg-gray-800" : "bg-white"
         }`}
       >
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className={darkMode ? "bg-gray-700" : "bg-gray-50"}>
-              <tr>
-                <th
-                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                    darkMode ? "text-gray-300" : "text-gray-500"
-                  }`}
-                >
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className={darkMode ? "bg-gray-700" : "bg-gray-50"}>
+            <tr>
+              <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <span className={darkMode ? "text-gray-300" : "text-gray-500"}>
                   Nom
-                </th>
-                <th
-                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                    darkMode ? "text-gray-300" : "text-gray-500"
-                  }`}
-                >
+                </span>
+              </th>
+              <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-xs font-medium uppercase tracking-wider hidden sm:table-cell">
+                <span className={darkMode ? "text-gray-300" : "text-gray-500"}>
                   Email
-                </th>
-                <th
-                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                    darkMode ? "text-gray-300" : "text-gray-500"
-                  }`}
-                >
+                </span>
+              </th>
+              <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-xs font-medium uppercase tracking-wider hidden md:table-cell">
+                <span className={darkMode ? "text-gray-300" : "text-gray-500"}>
                   Rôle
-                </th>
-                <th
-                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                    darkMode ? "text-gray-300" : "text-gray-500"
-                  }`}
-                >
+                </span>
+              </th>
+              <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <span className={darkMode ? "text-gray-300" : "text-gray-500"}>
                   Statut
-                </th>
-                <th
-                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                    darkMode ? "text-gray-300" : "text-gray-500"
-                  }`}
-                >
+                </span>
+              </th>
+              <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-xs font-medium uppercase tracking-wider hidden lg:table-cell">
+                <span className={darkMode ? "text-gray-300" : "text-gray-500"}>
                   Dernière connexion
-                </th>
-                <th
-                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${
-                    darkMode ? "text-gray-300" : "text-gray-500"
-                  }`}
-                >
+                </span>
+              </th>
+              <th className="px-2 py-2 sm:px-3 sm:py-3 text-left text-xs font-medium uppercase tracking-wider">
+                <span className={darkMode ? "text-gray-300" : "text-gray-500"}>
                   Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody
-              className={`divide-y ${
-                darkMode
-                  ? "divide-gray-700 bg-gray-800"
-                  : "divide-gray-200 bg-white"
-              }`}
-            >
-              {currentUsers.length > 0 ? (
-                currentUsers.map((user) => (
-                  <tr
-                    key={user?._id}
-                    className={
-                      darkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
-                    }
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div
-                          className={`flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center mr-3 ${
-                            darkMode ? "bg-gray-600" : "bg-gray-200"
-                          }`}
-                        >
-                          {user?.username?.charAt(0)?.toUpperCase() || "U"}
-                        </div>
-                        <div
-                          className={`text-sm font-medium ${
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody
+            className={`divide-y ${
+              darkMode
+                ? "divide-gray-700 bg-gray-800"
+                : "divide-gray-200 bg-white"
+            }`}
+          >
+            {currentUsers.length > 0 ? (
+              currentUsers.map((user) => (
+                <tr
+                  key={user?._id}
+                  className={
+                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
+                  }
+                >
+                  <td className="px-2 py-3 sm:px-3 sm:py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div
+                        className={`flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center mr-2 sm:mr-3 ${
+                          darkMode ? "bg-gray-600" : "bg-gray-200"
+                        }`}
+                      >
+                        {user?.username?.charAt(0)?.toUpperCase() || "U"}
+                      </div>
+                      <div className="flex flex-col">
+                        <span
+                          className={`text-xs sm:text-sm font-medium truncate max-w-[100px] sm:max-w-none ${
                             darkMode ? "text-white" : "text-gray-900"
                           }`}
                         >
                           {user?.username || "Inconnu"}
-                        </div>
+                        </span>
+                        <span className="text-xs sm:hidden text-gray-500 truncate max-w-[100px]">
+                          {user?.email || "Non renseigné"}
+                        </span>
                       </div>
-                    </td>
-                    <td
-                      className={`px-6 py-4 whitespace-nowrap text-sm ${
-                        darkMode ? "text-gray-300" : "text-gray-500"
-                      }`}
+                    </div>
+                  </td>
+                  <td className="px-2 py-3 sm:px-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm hidden sm:table-cell">
+                    <span
+                      className={darkMode ? "text-gray-300" : "text-gray-500"}
                     >
                       {user?.email || "Non renseigné"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user?.role === "admin"
-                            ? darkMode
-                              ? "bg-purple-900 text-purple-200"
-                              : "bg-purple-100 text-purple-800"
-                            : darkMode
-                            ? "bg-green-900 text-green-200"
-                            : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {user?.role || "user"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          user?.isActive
-                            ? darkMode
-                              ? "bg-green-900 text-green-200"
-                              : "bg-green-100 text-green-800"
-                            : darkMode
-                            ? "bg-red-900 text-red-200"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {user?.isActive ? "Actif" : "Inactif"}
-                      </span>
-                    </td>
-                    <td
-                      className={`px-6 py-4 whitespace-nowrap text-sm ${
-                        darkMode ? "text-gray-300" : "text-gray-500"
+                    </span>
+                  </td>
+                  <td className="px-2 py-3 sm:px-3 sm:py-4 whitespace-nowrap hidden md:table-cell">
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        user?.role === "admin"
+                          ? darkMode
+                            ? "bg-purple-900 text-purple-200"
+                            : "bg-purple-100 text-purple-800"
+                          : darkMode
+                          ? "bg-green-900 text-green-200"
+                          : "bg-green-100 text-green-800"
                       }`}
                     >
+                      {user?.role || "user"}
+                    </span>
+                  </td>
+                  <td className="px-2 py-3 sm:px-3 sm:py-4 whitespace-nowrap">
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        user?.isActive
+                          ? darkMode
+                            ? "bg-green-900 text-green-200"
+                            : "bg-green-100 text-green-800"
+                          : darkMode
+                          ? "bg-red-900 text-red-200"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      <span className="hidden sm:inline">
+                        {user?.isActive ? "Actif" : "Inactif"}
+                      </span>
+                      <span className="sm:hidden">
+                        {user?.isActive ? "A" : "I"}
+                      </span>
+                    </span>
+                  </td>
+                  <td className="px-2 py-3 sm:px-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm hidden lg:table-cell">
+                    <span
+                      className={darkMode ? "text-gray-300" : "text-gray-500"}
+                    >
                       {formatDate(user?.lastLogin)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex flex-wrap gap-3">
-                        <button
-                          onClick={() =>
-                            toggleUserStatus(user?._id, user?.isActive)
-                          }
-                          className={`p-2 rounded-full transition ${
-                            user?.isActive
-                              ? darkMode
-                                ? "text-orange-400 hover:bg-orange-900"
-                                : "text-orange-600 hover:bg-orange-100"
-                              : darkMode
-                              ? "text-green-400 hover:bg-green-900"
-                              : "text-green-600 hover:bg-green-100"
-                          }`}
-                          data-tooltip-id="action-tooltip"
-                          data-tooltip-content={
-                            user?.isActive
-                              ? "Désactiver l'utilisateur"
-                              : "Activer l'utilisateur"
-                          }
-                        >
-                          {user?.isActive ? (
-                            <FaToggleOn size={18} />
-                          ) : (
-                            <FaToggleOff size={18} />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => openUserModal(user)}
-                          className={`p-2 rounded-full transition ${
-                            darkMode
-                              ? "text-blue-400 hover:bg-blue-900"
-                              : "text-blue-600 hover:bg-blue-100"
-                          }`}
-                          data-tooltip-id="action-tooltip"
-                          data-tooltip-content="Modifier l'utilisateur"
-                        >
-                          <FaEdit size={16} />
-                        </button>
-                        <button
-                          onClick={() => confirmDelete(user)}
-                          className={`p-2 rounded-full transition ${
-                            darkMode
-                              ? "text-red-400 hover:bg-red-900"
-                              : "text-red-600 hover:bg-red-100"
-                          }`}
-                          disabled={user?.role === "admin"}
-                          data-tooltip-id="action-tooltip"
-                          data-tooltip-content={
-                            user?.role === "admin"
-                              ? "Impossible de supprimer un admin"
-                              : "Supprimer l'utilisateur"
-                          }
-                        >
-                          <FaTrash size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td
-                    colSpan="6"
-                    className={`px-6 py-4 text-center ${
-                      darkMode ? "text-gray-400" : "text-gray-500"
-                    }`}
-                  >
-                    Aucun utilisateur trouvé
+                    </span>
+                  </td>
+                  <td className="px-2 py-3 sm:px-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
+                      <button
+                        onClick={() =>
+                          toggleUserStatus(user?._id, user?.isActive)
+                        }
+                        className={`p-1 sm:p-2 rounded-full transition ${
+                          user?.isActive
+                            ? darkMode
+                              ? "text-orange-400 hover:bg-orange-900"
+                              : "text-orange-600 hover:bg-orange-100"
+                            : darkMode
+                            ? "text-green-400 hover:bg-green-900"
+                            : "text-green-600 hover:bg-green-100"
+                        }`}
+                        data-tooltip-id="action-tooltip"
+                        data-tooltip-content={
+                          user?.isActive
+                            ? "Désactiver l'utilisateur"
+                            : "Activer l'utilisateur"
+                        }
+                      >
+                        {user?.isActive ? (
+                          <FaToggleOn size={16} />
+                        ) : (
+                          <FaToggleOff size={16} />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => openUserModal(user)}
+                        className={`p-1 sm:p-2 rounded-full transition ${
+                          darkMode
+                            ? "text-blue-400 hover:bg-blue-900"
+                            : "text-blue-600 hover:bg-blue-100"
+                        }`}
+                        data-tooltip-id="action-tooltip"
+                        data-tooltip-content="Modifier l'utilisateur"
+                      >
+                        <FaEdit size={14} />
+                      </button>
+                      <button
+                        onClick={() => confirmDelete(user)}
+                        className={`p-1 sm:p-2 rounded-full transition ${
+                          darkMode
+                            ? "text-red-400 hover:bg-red-900"
+                            : "text-red-600 hover:bg-red-100"
+                        }`}
+                        disabled={user?.role === "admin"}
+                        data-tooltip-id="action-tooltip"
+                        data-tooltip-content={
+                          user?.role === "admin"
+                            ? "Impossible de supprimer un admin"
+                            : "Supprimer l'utilisateur"
+                        }
+                      >
+                        <FaTrash size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan="6"
+                  className={`px-4 py-4 text-center ${
+                    darkMode ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
+                  Aucun utilisateur trouvé
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
 
         {filteredUsers.length > usersPerPage && (
           <div
-            className={`px-4 py-3 flex items-center justify-between border-t ${
+            className={`px-2 sm:px-4 py-3 flex items-center justify-between border-t ${
               darkMode
                 ? "border-gray-700 bg-gray-800"
                 : "border-gray-200 bg-white"
-            } sm:px-6`}
+            }`}
           >
             <div className="flex-1 flex justify-between sm:hidden">
               <button
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage === 1}
-                className={`relative inline-flex items-center px-4 py-2 border rounded-md text-sm font-medium ${
+                className={`relative inline-flex items-center px-3 py-1.5 border rounded-md text-xs font-medium ${
                   darkMode
                     ? "border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600"
                     : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
@@ -609,12 +607,19 @@ const Users = ({ darkMode }) => {
               >
                 Précédent
               </button>
+              <span
+                className={`px-3 py-1.5 text-xs ${
+                  darkMode ? "text-gray-300" : "text-gray-700"
+                }`}
+              >
+                Page {currentPage} / {totalPages}
+              </span>
               <button
                 onClick={() =>
                   setCurrentPage((p) => Math.min(p + 1, totalPages))
                 }
                 disabled={currentPage === totalPages}
-                className={`ml-3 relative inline-flex items-center px-4 py-2 border rounded-md text-sm font-medium ${
+                className={`relative inline-flex items-center px-3 py-1.5 border rounded-md text-xs font-medium ${
                   darkMode
                     ? "border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600"
                     : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
@@ -626,7 +631,7 @@ const Users = ({ darkMode }) => {
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p
-                  className={`text-sm ${
+                  className={`text-xs sm:text-sm ${
                     darkMode ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
@@ -645,21 +650,21 @@ const Users = ({ darkMode }) => {
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                     disabled={currentPage === 1}
-                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-sm font-medium ${
+                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border text-xs sm:text-sm font-medium ${
                       darkMode
                         ? "border-gray-600 text-gray-400 bg-gray-700 hover:bg-gray-600"
                         : "border-gray-300 text-gray-500 bg-white hover:bg-gray-50"
                     } disabled:opacity-50`}
                   >
                     <span className="sr-only">Précédent</span>
-                    <FaChevronLeft />
+                    <FaChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map(
                     (page) => (
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                        className={`relative inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 border text-xs sm:text-sm font-medium ${
                           currentPage === page
                             ? darkMode
                               ? "z-10 bg-blue-900 border-blue-700 text-blue-100"
@@ -678,14 +683,14 @@ const Users = ({ darkMode }) => {
                       setCurrentPage((p) => Math.min(p + 1, totalPages))
                     }
                     disabled={currentPage === totalPages}
-                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-sm font-medium ${
+                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border text-xs sm:text-sm font-medium ${
                       darkMode
                         ? "border-gray-600 text-gray-400 bg-gray-700 hover:bg-gray-600"
                         : "border-gray-300 text-gray-500 bg-white hover:bg-gray-50"
                     } disabled:opacity-50`}
                   >
                     <span className="sr-only">Suivant</span>
-                    <FaChevronRight />
+                    <FaChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
                   </button>
                 </nav>
               </div>
@@ -701,24 +706,30 @@ const Users = ({ darkMode }) => {
         contentLabel="Confirmer la suppression"
       >
         <div
-          className={`rounded-lg p-6 ${darkMode ? "bg-gray-800" : "bg-white"}`}
+          className={`rounded-lg p-4 sm:p-6 ${
+            darkMode ? "bg-gray-800" : "bg-white"
+          }`}
         >
           <h2
-            className={`text-xl font-bold mb-4 ${
+            className={`text-lg sm:text-xl font-bold mb-3 sm:mb-4 ${
               darkMode ? "text-white" : "text-gray-800"
             }`}
           >
             Confirmer la suppression
           </h2>
-          <p className={`mb-6 ${darkMode ? "text-gray-300" : "text-gray-600"}`}>
+          <p
+            className={`mb-4 sm:mb-6 ${
+              darkMode ? "text-gray-300" : "text-gray-600"
+            }`}
+          >
             Êtes-vous sûr de vouloir supprimer définitivement l'utilisateur{" "}
             <strong className="text-red-600">{userToDelete?.username}</strong> ?
             Cette action est irréversible.
           </p>
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end space-x-2 sm:space-x-3">
             <button
               onClick={() => setIsDeleteModalOpen(false)}
-              className={`px-4 py-2 border rounded-md transition ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 border rounded-md text-xs sm:text-sm transition ${
                 darkMode
                   ? "border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600"
                   : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
@@ -728,10 +739,10 @@ const Users = ({ darkMode }) => {
             </button>
             <button
               onClick={handleDelete}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
+              className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition text-xs sm:text-sm"
               disabled={userToDelete?.role === "admin"}
             >
-              Confirmer la suppression
+              Supprimer
             </button>
           </div>
         </div>
@@ -746,10 +757,12 @@ const Users = ({ darkMode }) => {
         }
       >
         <div
-          className={`rounded-lg p-6 ${darkMode ? "bg-gray-800" : "bg-white"}`}
+          className={`rounded-lg p-4 sm:p-6 ${
+            darkMode ? "bg-gray-800" : "bg-white"
+          }`}
         >
           <h2
-            className={`text-xl font-bold mb-4 ${
+            className={`text-lg sm:text-xl font-bold mb-4 ${
               darkMode ? "text-white" : "text-gray-800"
             }`}
           >
@@ -758,9 +771,9 @@ const Users = ({ darkMode }) => {
               : "Ajouter un nouvel utilisateur"}
           </h2>
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
+            <div className="mb-3 sm:mb-4">
               <label
-                className={`block text-sm font-bold mb-2 ${
+                className={`block text-xs sm:text-sm font-bold mb-1 sm:mb-2 ${
                   darkMode ? "text-gray-300" : "text-gray-700"
                 }`}
               >
@@ -768,7 +781,7 @@ const Users = ({ darkMode }) => {
               </label>
               <input
                 type="text"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.username
                     ? "border-red-500"
                     : darkMode
@@ -785,9 +798,9 @@ const Users = ({ darkMode }) => {
                 <p className="text-red-500 text-xs mt-1">{errors.username}</p>
               )}
             </div>
-            <div className="mb-4">
+            <div className="mb-3 sm:mb-4">
               <label
-                className={`block text-sm font-bold mb-2 ${
+                className={`block text-xs sm:text-sm font-bold mb-1 sm:mb-2 ${
                   darkMode ? "text-gray-300" : "text-gray-700"
                 }`}
               >
@@ -795,7 +808,7 @@ const Users = ({ darkMode }) => {
               </label>
               <input
                 type="email"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.email
                     ? "border-red-500"
                     : darkMode
@@ -815,17 +828,17 @@ const Users = ({ darkMode }) => {
             </div>
 
             {!currentUser ? (
-              <div className="mb-4">
+              <div className="mb-3 sm:mb-4">
                 <label
-                  className={`block text-sm font-bold mb-2 ${
+                  className={`block text-xs sm:text-sm font-bold mb-1 sm:mb-2 ${
                     darkMode ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
-                  Mot de passe (minimum 8 caractères)
+                  Mot de passe (min 8 caractères)
                 </label>
                 <input
                   type="password"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.password
                       ? "border-red-500"
                       : darkMode
@@ -843,17 +856,17 @@ const Users = ({ darkMode }) => {
                 )}
               </div>
             ) : (
-              <div className="mb-4">
+              <div className="mb-3 sm:mb-4">
                 <label
-                  className={`block text-sm font-bold mb-2 ${
+                  className={`block text-xs sm:text-sm font-bold mb-1 sm:mb-2 ${
                     darkMode ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
-                  Nouveau mot de passe (laisser vide pour ne pas changer)
+                  Nouveau mot de passe
                 </label>
                 <input
                   type="password"
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.newPassword
                       ? "border-red-500"
                       : darkMode
@@ -875,16 +888,16 @@ const Users = ({ darkMode }) => {
             )}
 
             {currentUser && (
-              <div className="mb-4">
+              <div className="mb-3 sm:mb-4">
                 <label
-                  className={`block text-sm font-bold mb-2 ${
+                  className={`block text-xs sm:text-sm font-bold mb-1 sm:mb-2 ${
                     darkMode ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
                   Rôle
                 </label>
                 <div
-                  className={`w-full px-3 py-2 border rounded-md ${
+                  className={`w-full px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm border rounded-md ${
                     darkMode
                       ? "border-gray-600 bg-gray-700 text-white"
                       : "border-gray-300 bg-gray-100"
@@ -896,11 +909,11 @@ const Users = ({ darkMode }) => {
                 </div>
               </div>
             )}
-            <div className="flex justify-end space-x-3">
+            <div className="flex justify-end space-x-2 sm:space-x-3">
               <button
                 type="button"
                 onClick={() => setIsUserModalOpen(false)}
-                className={`px-4 py-2 border rounded-md transition ${
+                className={`px-3 py-1.5 sm:px-4 sm:py-2 border rounded-md text-xs sm:text-sm transition ${
                   darkMode
                     ? "border-gray-600 text-gray-300 bg-gray-700 hover:bg-gray-600"
                     : "border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
@@ -910,11 +923,9 @@ const Users = ({ darkMode }) => {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-xs sm:text-sm"
               >
-                {currentUser
-                  ? "Enregistrer les modifications"
-                  : "Créer l'utilisateur"}
+                {currentUser ? "Enregistrer" : "Créer"}
               </button>
             </div>
           </form>

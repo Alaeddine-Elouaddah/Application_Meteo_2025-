@@ -188,7 +188,9 @@ const insertAllCities = async (req, res) => {
         await DonneesCollectees.create(weatherDoc);
         results.push({ city: cityData.city, status: "success" });
         await new Promise((resolve) => setTimeout(resolve, 1500));
+        console.log(`${cityData.city} a été ajoutée avec succès`);
       } catch (error) {
+        console.log(`${cityData.city} a été ajoutée avec succès`);
         results.push({
           city: cityData.city,
           status: "failed",
@@ -196,6 +198,7 @@ const insertAllCities = async (req, res) => {
         });
       }
     }
+    console.log(`${results.length} villes ont été ajoutées avec succès`);
     res.status(200).json({ success: true, data: results });
   } catch (error) {
     res.status(500).json({
@@ -218,10 +221,18 @@ const addNextDayForecast = async (req, res) => {
         );
 
         const nextDayDate = moment().add(6, "days").startOf("day").toDate();
-        const nextDayForecast = getDayForecastDetails(
-          forecast.data.list,
-          nextDayDate
-        );
+
+        let nextDayForecast;
+        try {
+          nextDayForecast = getDayForecastDetails(
+            forecast.data.list,
+            nextDayDate
+          );
+        } catch (e) {
+          console.log(
+            `⚠️ Erreur dans getDayForecastDetails pour ${cityDoc.city.name} : ${e.message}`
+          );
+        }
 
         if (nextDayForecast) {
           await DonneesCollectees.updateOne(
@@ -229,17 +240,27 @@ const addNextDayForecast = async (req, res) => {
             { $push: { forecast: nextDayForecast } }
           );
 
-          console.log(`La ville est ${cityDoc.city.name} => Succès`);
+          console.log(`✅ Ville ajoutée avec succès : ${cityDoc.city.name}`);
           results.push({
             city: cityDoc.city.name,
             status: "success",
             forecast: nextDayForecast.date,
           });
+        } else {
+          console.log(
+            `⚠️ Pas de prévision trouvée pour : ${cityDoc.city.name}`
+          );
+          results.push({
+            city: cityDoc.city.name,
+            status: "no_forecast_found",
+          });
         }
+
+        // Pause pour éviter de trop solliciter l'API
         await new Promise((resolve) => setTimeout(resolve, 1500));
       } catch (error) {
         console.log(
-          `La ville est ${cityDoc.city.name} => Erreur: ${error.message}`
+          `❌ Erreur pour la ville ${cityDoc.city.name} : ${error.message}`
         );
         results.push({
           city: cityDoc.city.name,
@@ -249,9 +270,24 @@ const addNextDayForecast = async (req, res) => {
       }
     }
 
-    res.status(200).json({ success: true, data: results });
+    // Filtrer les résultats valides avant envoi
+    const filteredResults = results.filter(
+      (item) => item !== undefined && item !== null
+    );
+
+    res.status(200).json({ success: true, data: filteredResults });
+
+    // Affichage résumé des succès
+    console.log("\n📊 Résumé des ajouts réussis :");
+    filteredResults
+      .filter((item) => item.status === "success")
+      .forEach((item) =>
+        console.log(
+          `✅ ${item.city} => Prévision ajoutée pour ${item.forecast}`
+        )
+      );
   } catch (error) {
-    console.log(`Erreur globale: ${error.message}`);
+    console.log(`❌ Erreur globale : ${error.message}`);
     res.status(500).json({
       success: false,
       error: error.message,
