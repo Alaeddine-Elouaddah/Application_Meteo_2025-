@@ -21,7 +21,6 @@ module.exports = [
   { city: "Azemmour", lat: 33.2833, lon: -8.34 },
   { city: "Azilal", lat: 31.9616, lon: -6.5718 },
   { city: "Azrou", lat: 33.436, lon: -5.221 },
-
   { city: "Ben Guerir", lat: 32.25, lon: -7.95 },
   { city: "Ben Taïeb", lat: 34.0, lon: -3.0 },
   { city: "Beni Ansar", lat: 35.0, lon: -2.9 },
@@ -90,7 +89,6 @@ module.exports = [
   { city: "Missour", lat: 33.0464, lon: -3.9894 },
   { city: "Moulay Abdallah", lat: 33.1947, lon: -8.5333 },
   { city: "Mohammédia", lat: 33.6861, lon: -7.3829 },
-
   { city: "Moulay Bousselham", lat: 34.0, lon: -6.5 },
   { city: "Moulay Idriss", lat: 34.0, lon: -5.5 },
   { city: "Nador", lat: 35.1688, lon: -2.9335 },

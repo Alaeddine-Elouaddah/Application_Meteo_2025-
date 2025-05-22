@@ -102,7 +102,7 @@ exports.checkAndSendAlerts = async () => {
 
     for (const alert of alerts) {
       const response = await axios.get(
-        `https://api.openweathermap.org/data/2.5/weather?q=${alert.city}&appid=${API_KEY}&units=metric`
+        `https://api.openweathermap.org/data/2.5/weather?q=${alert}&appid=${API_KEY}&units=metric`
       );
 
       const weatherData = response.data;

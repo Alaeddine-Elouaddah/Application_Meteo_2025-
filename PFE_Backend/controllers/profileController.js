@@ -2,6 +2,8 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const asyncHandler = require("../middlewares/async");
 const ErrorResponse = require("../utils/errorResponse");
+const AppError = require("../utils/appError");
+const catchAsync = require("../utils/catchAsync");
 
 exports.getMyProfile = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user.id);
@@ -57,5 +59,47 @@ exports.updatePassword = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     data: { id: user._id },
+  });
+});
+
+// Get user's default city
+exports.getDefaultCity = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id).select("defaultCity");
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      defaultCity: user.defaultCity,
+    },
+  });
+});
+
+// Update user's default city
+exports.updateDefaultCity = catchAsync(async (req, res, next) => {
+  const { defaultCity } = req.body;
+
+  if (
+    !defaultCity ||
+    !defaultCity.name ||
+    !defaultCity.lat ||
+    !defaultCity.lon
+  ) {
+    return next(new AppError("Please provide valid city data", 400));
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { defaultCity },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select("defaultCity");
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      defaultCity: user.defaultCity,
+    },
   });
 });

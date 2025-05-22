@@ -1,4 +1,13 @@
 import React, { useState, useEffect } from "react";
+import { NavLink, Route, Routes, Navigate } from "react-router-dom";
+import axios from "axios";
+
+import Param from "../components/Admin/Param/Param";
+import Comparisons from "../components/Admin/Comparisons/Comparisons";
+import Dashboard from "../components/Admin/Dashboard/Dashboard";
+import ProfileEdit from "../components/Admin/Profile/ProfileEdit";
+import UserAlert from "./User/UserAlert";
+
 import {
   Thermometer,
   Droplet,
@@ -12,6 +21,10 @@ import {
   RefreshCw,
   Locate,
   Navigation,
+  Settings,
+  BarChart2,
+  Home,
+  User as UserIcon,
 } from "lucide-react";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
@@ -122,7 +135,7 @@ const DashboardCard = ({
 
 // Composant Carte Interactive
 const InteractiveMap = ({ location, darkMode }) => {
-  if (!location) return null;
+  if (!location || !location.lat || !location.lon) return null;
 
   const mapStyle = {
     height: "300px",
@@ -168,13 +181,10 @@ const User = () => {
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [locationAccuracy, setLocationAccuracy] = useState(null);
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   const OPENWEATHER_API_KEY = "6e601e5bf166b100420a3cf427368540";
   const OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5";
-
-  const getWeatherIcon = (iconCode) => {
-    return `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
-  };
 
   const fetchWeatherData = async () => {
     try {
@@ -185,14 +195,23 @@ const User = () => {
         throw new Error("Clé API manquante");
       }
 
+      // Vérifier si nous avons une ville ou une localisation valide
+      if (!city && (!userLocation || !userLocation.lat || !userLocation.lon)) {
+        setLoading(false);
+        return;
+      }
+
       let currentUrl, forecastUrl;
 
-      if (userLocation) {
+      if (userLocation && userLocation.lat && userLocation.lon) {
         currentUrl = `${OPENWEATHER_BASE_URL}/weather?lat=${userLocation.lat}&lon=${userLocation.lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=fr`;
         forecastUrl = `${OPENWEATHER_BASE_URL}/forecast?lat=${userLocation.lat}&lon=${userLocation.lon}&appid=${OPENWEATHER_API_KEY}&units=metric&lang=fr&cnt=40`;
-      } else {
+      } else if (city) {
         currentUrl = `${OPENWEATHER_BASE_URL}/weather?q=${city},MA&appid=${OPENWEATHER_API_KEY}&units=metric&lang=fr`;
         forecastUrl = `${OPENWEATHER_BASE_URL}/forecast?q=${city},MA&appid=${OPENWEATHER_API_KEY}&units=metric&lang=fr&cnt=40`;
+      } else {
+        setLoading(false);
+        return;
       }
 
       const [currentResponse, forecastResponse] = await Promise.all([
@@ -249,8 +268,7 @@ const User = () => {
           setIsFetchingLocation(false);
         },
         (err) => {
-          let errorMessage =
-            "Localisation refusée. Utilisation de la ville par défaut.";
+          let errorMessage = "Localisation refusée.";
           switch (err.code) {
             case err.PERMISSION_DENIED:
               errorMessage = "L'accès à la géolocalisation a été refusé.";
@@ -335,6 +353,323 @@ const User = () => {
     });
   };
 
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "dashboard":
+        return (
+          <>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold">
+                  {weatherData?.name || city}
+                </h2>
+                <p className="text-sm md:text-base">
+                  {lastUpdated && `Dernière mise à jour: ${lastUpdated}`}
+                </p>
+                {userLocation && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Coordonnées: {userLocation.lat.toFixed(6)},{" "}
+                    {userLocation.lon.toFixed(6)}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={fetchWeatherData}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                  darkMode
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-blue-500 hover:bg-blue-600"
+                } text-white`}
+                disabled={loading}
+              >
+                <RefreshCw
+                  size={16}
+                  className={loading ? "animate-spin" : ""}
+                />
+                <span>Rafraîchir</span>
+              </button>
+            </div>
+
+            {error && (
+              <div
+                className={`p-4 mb-6 rounded-lg ${
+                  darkMode
+                    ? "bg-red-900 text-red-100"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                <AlertTriangle className="inline mr-2" />
+                {error}
+              </div>
+            )}
+
+            {/* Current Weather */}
+            {weatherData && (
+              <div
+                className={`p-4 md:p-6 rounded-xl shadow-md mb-6 ${
+                  darkMode ? "bg-gray-800" : "bg-white"
+                }`}
+              >
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6 gap-3">
+                  <h3 className="text-lg md:text-xl font-semibold">
+                    Conditions actuelles
+                  </h3>
+                  {weatherData.weather[0] && (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={`https://openweathermap.org/img/wn/${weatherData.weather[0].icon}@2x.png`}
+                        alt={weatherData.weather[0].description}
+                        className="w-10 h-10"
+                      />
+                      <span className="text-base md:text-lg capitalize">
+                        {weatherData.weather[0].description}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <DashboardCard
+                    title="Température"
+                    value={`${Math.round(weatherData.main.temp)}°C`}
+                    icon={<Thermometer className="text-red-500" size={20} />}
+                    description={`Ressentie: ${Math.round(
+                      weatherData.main.feels_like
+                    )}°C`}
+                    darkMode={darkMode}
+                  />
+                  <DashboardCard
+                    title="Humidité"
+                    value={`${weatherData.main.humidity}%`}
+                    icon={<Droplet className="text-blue-400" size={20} />}
+                    description="Niveau d'humidité"
+                    darkMode={darkMode}
+                  />
+                  <DashboardCard
+                    title="Vent"
+                    value={`${Math.round(weatherData.wind.speed * 3.6)} km/h`}
+                    icon={<Wind className="text-gray-500" size={20} />}
+                    description={`Direction: ${weatherData.wind.deg}°`}
+                    darkMode={darkMode}
+                  />
+                  <DashboardCard
+                    title="Pression"
+                    value={`${weatherData.main.pressure} hPa`}
+                    icon={<CloudRain className="text-indigo-500" size={20} />}
+                    description="Pression atmosphérique"
+                    darkMode={darkMode}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              <div
+                className={`p-4 rounded-xl shadow ${
+                  darkMode ? "bg-gray-800" : "bg-white"
+                }`}
+              >
+                <h3 className="text-lg font-semibold mb-3">
+                  Température sur 24h
+                </h3>
+                <div className="h-64 md:h-72 lg:h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={darkMode ? "#4b5563" : "#e5e7eb"}
+                      />
+                      <XAxis
+                        dataKey="time"
+                        stroke={darkMode ? "#9ca3af" : "#6b7280"}
+                      />
+                      <YAxis stroke={darkMode ? "#9ca3af" : "#6b7280"} />
+                      <Tooltip
+                        contentStyle={
+                          darkMode
+                            ? {
+                                backgroundColor: "#1f2937",
+                                borderColor: "#374151",
+                                color: "#f3f4f6",
+                              }
+                            : {}
+                        }
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="temp"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        activeDot={{ r: 6 }}
+                        name="Température (°C)"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div
+                className={`p-4 rounded-xl shadow ${
+                  darkMode ? "bg-gray-800" : "bg-white"
+                }`}
+              >
+                <h3 className="text-lg font-semibold mb-3">Vent et Humidité</h3>
+                <div className="h-64 md:h-72 lg:h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={darkMode ? "#4b5563" : "#e5e7eb"}
+                      />
+                      <XAxis
+                        dataKey="time"
+                        stroke={darkMode ? "#9ca3af" : "#6b7280"}
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        orientation="left"
+                        stroke={darkMode ? "#9ca3af" : "#6b7280"}
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        stroke={darkMode ? "#9ca3af" : "#6b7280"}
+                      />
+                      <Tooltip
+                        contentStyle={
+                          darkMode
+                            ? {
+                                backgroundColor: "#1f2937",
+                                borderColor: "#374151",
+                                color: "#f3f4f6",
+                              }
+                            : {}
+                        }
+                      />
+                      <Legend />
+                      <Bar
+                        yAxisId="left"
+                        dataKey="wind"
+                        name="Vent (km/h)"
+                        fill="#6b7280"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        yAxisId="right"
+                        dataKey="humidity"
+                        name="Humidité (%)"
+                        fill="#60a5fa"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Detailed Forecast */}
+            {forecastData && (
+              <div
+                className={`p-4 rounded-xl shadow ${
+                  darkMode ? "bg-gray-800" : "bg-white"
+                }`}
+              >
+                <h3 className="text-lg font-semibold mb-3">
+                  Détails des prévisions
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className={darkMode ? "bg-gray-700" : "bg-gray-50"}>
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Jour
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Conditions
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Température
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Humidité
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                          Vent
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody
+                      className={`divide-y ${
+                        darkMode ? "divide-gray-700" : "divide-gray-200"
+                      }`}
+                    >
+                      {Array.from({ length: 7 }).map((_, index) => {
+                        const forecastDay = getForecastForDay(index);
+                        return forecastDay ? (
+                          <tr
+                            key={index}
+                            className={
+                              darkMode
+                                ? "hover:bg-gray-700"
+                                : "hover:bg-gray-50"
+                            }
+                          >
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {new Date(
+                                new Date().getTime() +
+                                  index * 24 * 60 * 60 * 1000
+                              ).toLocaleDateString("fr-FR", {
+                                weekday: "short",
+                                day: "numeric",
+                              })}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={`https://openweathermap.org/img/wn/${forecastDay.weather[0].icon}@2x.png`}
+                                  alt={forecastDay.weather[0].description}
+                                  className="w-8 h-8"
+                                />
+                                <span className="capitalize">
+                                  {forecastDay.weather[0].description}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {Math.round(forecastDay.main.temp)}°C
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {forecastDay.main.humidity}%
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {Math.round(forecastDay.wind.speed * 3.6)} km/h
+                            </td>
+                          </tr>
+                        ) : null;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        );
+
+      case "comparisons":
+        return <Comparisons darkMode={darkMode} />;
+      case "param":
+        return <Param darkMode={darkMode} />;
+      case "alerts":
+        return <UserAlert darkMode={darkMode} />;
+      case "profile":
+        return <ProfileEdit darkMode={darkMode} />;
+      default:
+        return <Dashboard darkMode={darkMode} />;
+    }
+  };
+
   return (
     <ErrorBoundary>
       <div
@@ -344,49 +679,103 @@ const User = () => {
             : "bg-gradient-to-br from-blue-50 to-gray-100"
         }`}
       >
-        {/* Sidebar */}
+        {/* Sidebar avec animation et transition */}
         <aside
           className={`w-full md:w-64 p-4 ${
             darkMode ? "bg-gray-800" : "bg-white"
-          } shadow-lg`}
+          } shadow-lg transform transition-transform duration-300 ease-in-out`}
         >
           <div className="flex flex-col h-full">
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-xl md:text-2xl font-bold text-blue-500 flex items-center gap-2">
+              <h1 className="text-xl md:text-2xl font-bold text-blue-500 flex items-center gap-2 hover:text-blue-600 transition-colors duration-200">
                 <MapPin size={20} /> Météo Pro
               </h1>
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className={`p-2 rounded-full ${
+                className={`p-2 rounded-full transition-all duration-200 ${
                   darkMode
-                    ? "bg-gray-700 text-yellow-300"
-                    : "bg-gray-200 text-gray-700"
+                    ? "bg-gray-700 text-yellow-300 hover:bg-gray-600"
+                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                 }`}
               >
                 {darkMode ? <Sun size={18} /> : <CloudRain size={18} />}
               </button>
             </div>
 
+            {/* Navigation avec animation au survol */}
+            <nav className="mb-6">
+              <ul className="space-y-1">
+                {[
+                  {
+                    to: "/user/dashboard",
+                    icon: <Home size={18} />,
+                    label: "Dashboard",
+                  },
+                  {
+                    to: "/user/comparisons",
+                    icon: <BarChart2 size={18} />,
+                    label: "Comparaisons",
+                  },
+                  {
+                    to: "/user/alerts",
+                    icon: <AlertTriangle size={18} />,
+                    label: "Alertes",
+                  },
+                  {
+                    to: "/user/profile",
+                    icon: <UserIcon size={18} />,
+                    label: "Profil",
+                  },
+                  {
+                    to: "/user/param",
+                    icon: <Settings size={18} />,
+                    label: "Paramètres",
+                  },
+                ].map((item) => (
+                  <li key={item.to}>
+                    <NavLink
+                      to={item.to}
+                      className={({ isActive }) =>
+                        `w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left transition-all duration-200 ${
+                          isActive
+                            ? darkMode
+                              ? "bg-gray-700 text-white"
+                              : "bg-blue-100 text-blue-600"
+                            : darkMode
+                            ? "hover:bg-gray-700 hover:translate-x-1"
+                            : "hover:bg-gray-100 hover:translate-x-1"
+                        }`
+                      }
+                    >
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </NavLink>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            {/* Formulaire de recherche avec animation */}
             <form onSubmit={handleSearch} className="mb-6">
-              <div className="relative">
+              <div className="relative group">
                 <input
                   type="text"
                   value={inputCity}
                   onChange={(e) => setInputCity(e.target.value)}
                   placeholder="Rechercher une ville..."
-                  className={`w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
                     darkMode ? "bg-gray-700 text-white" : "bg-white border"
                   }`}
                 />
                 <Search
-                  className="absolute left-3 top-3 text-gray-400"
+                  className="absolute left-3 top-3 text-gray-400 group-hover:text-blue-500 transition-colors duration-200"
                   size={16}
                 />
               </div>
               <div className="flex gap-2 mt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg transition"
+                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
                 >
                   Rechercher
                 </button>
@@ -394,16 +783,13 @@ const User = () => {
                   type="button"
                   onClick={handleLocateMe}
                   disabled={isFetchingLocation}
-                  className={`p-2 rounded-lg ${
+                  className={`p-2 rounded-lg transition-all duration-200 ${
                     darkMode
                       ? "bg-gray-700 hover:bg-gray-600"
                       : "bg-gray-200 hover:bg-gray-300"
-                  }`}
+                  } ${isFetchingLocation ? "animate-spin" : ""}`}
                 >
-                  <Locate
-                    size={18}
-                    className={isFetchingLocation ? "animate-spin" : ""}
-                  />
+                  <Locate size={18} />
                 </button>
               </div>
             </form>
@@ -420,37 +806,27 @@ const User = () => {
               </div>
             )}
 
-            {locationAccuracy && (
-              <div
-                className={`p-3 mb-4 rounded text-xs ${
-                  darkMode
-                    ? "bg-gray-700 text-gray-300"
-                    : "bg-gray-100 text-gray-600"
-                }`}
-              >
-                Précision de localisation: ±{Math.round(locationAccuracy)}{" "}
-                mètres
-              </div>
-            )}
-
+            {/* Affichage de la ville actuelle avec animation */}
             <div
-              className={`p-4 rounded-lg mb-6 ${
+              className={`p-4 rounded-lg mb-6 transition-all duration-200 ${
                 darkMode ? "bg-gray-700" : "bg-blue-50"
-              }`}
+              } hover:shadow-lg`}
             >
               <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                <MapPin size={16} /> Ville actuelle
+                <MapPin size={16} className="text-blue-500" /> Ville actuelle
               </h2>
-              <p className="text-blue-500 font-medium">{city}</p>
-              {userLocation && (
-                <p className="text-xs mt-1">
+              <p className="text-blue-500 font-medium">
+                {city || "Aucune ville sélectionnée"}
+              </p>
+              {userLocation && userLocation.lat && userLocation.lon && (
+                <p className="text-xs mt-1 opacity-75">
                   {userLocation.lat.toFixed(6)}, {userLocation.lon.toFixed(6)}
                 </p>
               )}
             </div>
 
             {/* Carte Interactive */}
-            {userLocation && (
+            {userLocation && userLocation.lat && userLocation.lon && (
               <div
                 className={`p-4 rounded-lg mb-6 ${
                   darkMode ? "bg-gray-700" : "bg-blue-50"
@@ -504,7 +880,7 @@ const User = () => {
                       {forecastDay ? (
                         <div className="flex items-center gap-2">
                           <img
-                            src={getWeatherIcon(forecastDay.weather[0].icon)}
+                            src={`https://openweathermap.org/img/wn/${forecastDay.weather[0].icon}@2x.png`}
                             alt={forecastDay.weather[0].description}
                             className="w-8 h-8"
                           />
@@ -523,297 +899,44 @@ const User = () => {
           </div>
         </aside>
 
-        {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold">
-                {weatherData?.name || city}
-              </h2>
-              <p className="text-sm md:text-base">
-                {lastUpdated && `Dernière mise à jour: ${lastUpdated}`}
-              </p>
-              {userLocation && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Coordonnées: {userLocation.lat.toFixed(6)},{" "}
-                  {userLocation.lon.toFixed(6)}
-                </p>
-              )}
+        {/* Main Content avec animation */}
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto transition-all duration-200">
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
-            <button
-              onClick={fetchWeatherData}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                darkMode
-                  ? "bg-blue-600 hover:bg-blue-700"
-                  : "bg-blue-500 hover:bg-blue-600"
-              } text-white`}
-              disabled={loading}
-            >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-              <span>Rafraîchir</span>
-            </button>
-          </div>
-
-          {error && (
+          ) : error ? (
             <div
-              className={`p-4 mb-6 rounded-lg ${
-                darkMode ? "bg-red-900 text-red-100" : "bg-red-100 text-red-700"
-              }`}
+              className={`p-4 rounded-lg ${
+                darkMode ? "bg-red-900/50" : "bg-red-50"
+              } text-red-700 dark:text-red-200`}
             >
-              <AlertTriangle className="inline mr-2" />
               {error}
             </div>
-          )}
-
-          {/* Current Weather */}
-          {weatherData && (
-            <div
-              className={`p-4 md:p-6 rounded-xl shadow-md mb-6 ${
-                darkMode ? "bg-gray-800" : "bg-white"
-              }`}
-            >
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6 gap-3">
-                <h3 className="text-lg md:text-xl font-semibold">
-                  Conditions actuelles
-                </h3>
-                {weatherData.weather[0] && (
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={getWeatherIcon(weatherData.weather[0].icon)}
-                      alt={weatherData.weather[0].description}
-                      className="w-10 h-10"
-                    />
-                    <span className="text-base md:text-lg capitalize">
-                      {weatherData.weather[0].description}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <DashboardCard
-                  title="Température"
-                  value={`${Math.round(weatherData.main.temp)}°C`}
-                  icon={<Thermometer className="text-red-500" size={20} />}
-                  description={`Ressentie: ${Math.round(
-                    weatherData.main.feels_like
-                  )}°C`}
-                  darkMode={darkMode}
-                />
-                <DashboardCard
-                  title="Humidité"
-                  value={`${weatherData.main.humidity}%`}
-                  icon={<Droplet className="text-blue-400" size={20} />}
-                  description="Niveau d'humidité"
-                  darkMode={darkMode}
-                />
-                <DashboardCard
-                  title="Vent"
-                  value={`${Math.round(weatherData.wind.speed * 3.6)} km/h`}
-                  icon={<Wind className="text-gray-500" size={20} />}
-                  description={`Direction: ${weatherData.wind.deg}°`}
-                  darkMode={darkMode}
-                />
-                <DashboardCard
-                  title="Pression"
-                  value={`${weatherData.main.pressure} hPa`}
-                  icon={<CloudRain className="text-indigo-500" size={20} />}
-                  description="Pression atmosphérique"
-                  darkMode={darkMode}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div
-              className={`p-4 rounded-xl shadow ${
-                darkMode ? "bg-gray-800" : "bg-white"
-              }`}
-            >
-              <h3 className="text-lg font-semibold mb-3">
-                Température sur 24h
-              </h3>
-              <div className="h-64 md:h-72 lg:h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke={darkMode ? "#4b5563" : "#e5e7eb"}
-                    />
-                    <XAxis
-                      dataKey="time"
-                      stroke={darkMode ? "#9ca3af" : "#6b7280"}
-                    />
-                    <YAxis stroke={darkMode ? "#9ca3af" : "#6b7280"} />
-                    <Tooltip
-                      contentStyle={
-                        darkMode
-                          ? {
-                              backgroundColor: "#1f2937",
-                              borderColor: "#374151",
-                              color: "#f3f4f6",
-                            }
-                          : {}
-                      }
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="temp"
-                      stroke="#3b82f6"
-                      strokeWidth={2}
-                      activeDot={{ r: 6 }}
-                      name="Température (°C)"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div
-              className={`p-4 rounded-xl shadow ${
-                darkMode ? "bg-gray-800" : "bg-white"
-              }`}
-            >
-              <h3 className="text-lg font-semibold mb-3">Vent et Humidité</h3>
-              <div className="h-64 md:h-72 lg:h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke={darkMode ? "#4b5563" : "#e5e7eb"}
-                    />
-                    <XAxis
-                      dataKey="time"
-                      stroke={darkMode ? "#9ca3af" : "#6b7280"}
-                    />
-                    <YAxis
-                      yAxisId="left"
-                      orientation="left"
-                      stroke={darkMode ? "#9ca3af" : "#6b7280"}
-                    />
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      stroke={darkMode ? "#9ca3af" : "#6b7280"}
-                    />
-                    <Tooltip
-                      contentStyle={
-                        darkMode
-                          ? {
-                              backgroundColor: "#1f2937",
-                              borderColor: "#374151",
-                              color: "#f3f4f6",
-                            }
-                          : {}
-                      }
-                    />
-                    <Legend />
-                    <Bar
-                      yAxisId="left"
-                      dataKey="wind"
-                      name="Vent (km/h)"
-                      fill="#6b7280"
-                      radius={[4, 4, 0, 0]}
-                    />
-                    <Bar
-                      yAxisId="right"
-                      dataKey="humidity"
-                      name="Humidité (%)"
-                      fill="#60a5fa"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-          {/* Detailed Forecast */}
-          {forecastData && (
-            <div
-              className={`p-4 rounded-xl shadow ${
-                darkMode ? "bg-gray-800" : "bg-white"
-              }`}
-            >
-              <h3 className="text-lg font-semibold mb-3">
-                Détails des prévisions
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className={darkMode ? "bg-gray-700" : "bg-gray-50"}>
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Jour
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Conditions
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Température
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Humidité
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                        Vent
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody
-                    className={`divide-y ${
-                      darkMode ? "divide-gray-700" : "divide-gray-200"
-                    }`}
-                  >
-                    {Array.from({ length: 7 }).map((_, index) => {
-                      const forecastDay = getForecastForDay(index);
-                      return forecastDay ? (
-                        <tr
-                          key={index}
-                          className={
-                            darkMode ? "hover:bg-gray-700" : "hover:bg-gray-50"
-                          }
-                        >
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            {new Date(
-                              new Date().getTime() + index * 24 * 60 * 60 * 1000
-                            ).toLocaleDateString("fr-FR", {
-                              weekday: "short",
-                              day: "numeric",
-                            })}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={getWeatherIcon(
-                                  forecastDay.weather[0].icon
-                                )}
-                                alt={forecastDay.weather[0].description}
-                                className="w-8 h-8"
-                              />
-                              <span className="capitalize">
-                                {forecastDay.weather[0].description}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            {Math.round(forecastDay.main.temp)}°C
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            {forecastDay.main.humidity}%
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            {Math.round(forecastDay.wind.speed * 3.6)} km/h
-                          </td>
-                        </tr>
-                      ) : null;
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          ) : (
+            <Routes>
+              <Route
+                path="/"
+                element={<Navigate to="/user/dashboard" replace />}
+              />
+              <Route
+                path="/dashboard"
+                element={<Dashboard darkMode={darkMode} />}
+              />
+              <Route
+                path="/comparisons"
+                element={<Comparisons darkMode={darkMode} />}
+              />
+              <Route
+                path="/alerts"
+                element={<UserAlert darkMode={darkMode} />}
+              />
+              <Route
+                path="/profile"
+                element={<ProfileEdit darkMode={darkMode} />}
+              />
+              <Route path="/param" element={<Param darkMode={darkMode} />} />
+            </Routes>
           )}
         </main>
       </div>

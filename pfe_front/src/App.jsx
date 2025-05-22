@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "./components/HomePage";
 import Login from "./components/Login";
 import Admin from "./components/Admin/Admin";
-import User from "./components/User"; // Corrigé : le U majuscule
+import User from "./components/user"; // Corrigé : le U majuscule
 import PrivateRoute from "./components/PrivateRoute";
 
 const App = () => {
@@ -18,7 +18,7 @@ const App = () => {
 
         {/* Route protégée pour USER */}
         <Route
-          path="/user"
+          path="/user/*"
           element={
             <PrivateRoute role="user">
               <User />

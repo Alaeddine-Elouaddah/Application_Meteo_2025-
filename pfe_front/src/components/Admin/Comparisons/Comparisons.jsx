@@ -67,6 +67,8 @@ const translations = {
     alerts: "Alertes météo",
     noAlerts: "Aucune alerte",
     refresh: "Actualiser",
+    coordinatesPlaceholder: "Latitude, Longitude (ex: 30.42,-9.58)",
+    searchByCoordinates: "Rechercher par coordonnées",
   },
   en: {
     title: "Comparisons",
@@ -94,6 +96,8 @@ const translations = {
     alerts: "Weather Alerts",
     noAlerts: "No alerts",
     refresh: "Refresh",
+    coordinatesPlaceholder: "Latitude, Longitude (ex: 30.42,-9.58)",
+    searchByCoordinates: "Search by coordinates",
   },
   ar: {
     title: "المقارنات",
@@ -121,6 +125,8 @@ const translations = {
     alerts: "تنبيهات الطقس",
     noAlerts: "لا توجد تنبيهات",
     refresh: "تحديث",
+    coordinatesPlaceholder: "خط العرض، خط الطول (مثال: 30.42,-9.58)",
+    searchByCoordinates: "البحث بالإحداثيات",
   },
 };
 
@@ -139,6 +145,9 @@ const Comparisons = ({ darkMode }) => {
   const [alerts, setAlerts] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [language, setLanguage] = useState("fr");
+  const [coordinateInput, setCoordinateInput] = useState("");
+  const [latitudeInput, setLatitudeInput] = useState("");
+  const [longitudeInput, setLongitudeInput] = useState("");
 
   const t = translations[language];
 
@@ -161,6 +170,43 @@ const Comparisons = ({ darkMode }) => {
   const buttonClass = darkMode
     ? "bg-blue-700 hover:bg-blue-800"
     : "bg-blue-600 hover:bg-blue-700";
+
+  // Recherche par coordonnées
+  const handleCoordinateSearch = async (e) => {
+    e.preventDefault();
+    if (!latitudeInput.trim() || !longitudeInput.trim()) return;
+
+    try {
+      const lat = parseFloat(latitudeInput.trim());
+      const lon = parseFloat(longitudeInput.trim());
+
+      if (isNaN(lat) || isNaN(lon)) {
+        throw new Error("Coordonnées invalides");
+      }
+
+      setLoading(true);
+
+      // Récupérer le nom de la ville à partir des coordonnées
+      const response = await fetch(
+        `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${API_KEY}`
+      );
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const cityName = data[0].name;
+        setCity(cityName);
+        setLatitudeInput("");
+        setLongitudeInput("");
+        await fetchWeatherData(cityName);
+      } else {
+        throw new Error("Aucune ville trouvée pour ces coordonnées");
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Détecter la localisation de l'utilisateur
   const detectLocation = () => {
@@ -308,7 +354,7 @@ const Comparisons = ({ darkMode }) => {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-gray-50">
         <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-        <p className="text-lg text-gray-800">Chargement des données...</p>
+        <p className="text-lg text-gray-800">{t.loading}</p>
       </div>
     );
   }
@@ -319,14 +365,14 @@ const Comparisons = ({ darkMode }) => {
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded max-w-md">
           <div className="flex items-center">
             <FiAlertCircle className="mr-2" size={20} />
-            <span className="font-bold">Erreur :</span>
+            <span className="font-bold">{t.error}</span>
           </div>
           <p className="mt-2">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-3 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
           >
-            Réessayer
+            {t.refresh}
           </button>
         </div>
       </div>
@@ -339,9 +385,9 @@ const Comparisons = ({ darkMode }) => {
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded max-w-md">
           <div className="flex items-center">
             <FiInfo className="mr-2" size={20} />
-            <span className="font-bold">Information :</span>
+            <span className="font-bold">{t.noData}</span>
           </div>
-          <p className="mt-2">Aucune donnée disponible pour cette ville.</p>
+          <p className="mt-2">{t.noData}</p>
         </div>
       </div>
     );
@@ -455,7 +501,7 @@ const Comparisons = ({ darkMode }) => {
     labels: forecastTimes,
     datasets: [
       {
-        label: "Température prévue (°C)",
+        label: `${t.forecast} (${t.temperature}) (°C)`,
         data: forecastTemps,
         borderColor: "rgb(75, 192, 192)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
@@ -463,7 +509,7 @@ const Comparisons = ({ darkMode }) => {
         fill: true,
       },
       {
-        label: "Température réelle (°C)",
+        label: `${t.actual} (${t.temperature}) (°C)`,
         data: actualTemps,
         borderColor: "rgb(255, 99, 132)",
         backgroundColor: "rgba(255, 99, 132, 0.2)",
@@ -477,7 +523,7 @@ const Comparisons = ({ darkMode }) => {
     labels: forecastTimes,
     datasets: [
       {
-        label: "Humidité prévue (%)",
+        label: `${t.forecast} (${t.humidity}) (%)`,
         data: forecastHumidity,
         borderColor: "rgb(54, 162, 235)",
         backgroundColor: "rgba(54, 162, 235, 0.2)",
@@ -485,7 +531,7 @@ const Comparisons = ({ darkMode }) => {
         fill: true,
       },
       {
-        label: "Humidité réelle (%)",
+        label: `${t.actual} (${t.humidity}) (%)`,
         data: actualHumidity,
         borderColor: "rgb(255, 159, 64)",
         backgroundColor: "rgba(255, 159, 64, 0.2)",
@@ -499,7 +545,7 @@ const Comparisons = ({ darkMode }) => {
     labels: forecastTimes,
     datasets: [
       {
-        label: "Vitesse du vent prévue (km/h)",
+        label: `${t.forecast} (${t.wind}) (km/h)`,
         data: forecastWind,
         borderColor: "rgb(153, 102, 255)",
         backgroundColor: "rgba(153, 102, 255, 0.2)",
@@ -507,7 +553,7 @@ const Comparisons = ({ darkMode }) => {
         fill: true,
       },
       {
-        label: "Vitesse du vent réelle (km/h)",
+        label: `${t.actual} (${t.wind}) (km/h)`,
         data: actualWind,
         borderColor: "rgb(255, 206, 86)",
         backgroundColor: "rgba(255, 206, 86, 0.2)",
@@ -521,7 +567,7 @@ const Comparisons = ({ darkMode }) => {
     labels: forecastTimes,
     datasets: [
       {
-        label: "Pression prévue (hPa)",
+        label: `${t.forecast} (${t.pressure}) (hPa)`,
         data: forecastPressure,
         borderColor: "rgb(75, 192, 192)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
@@ -529,7 +575,7 @@ const Comparisons = ({ darkMode }) => {
         fill: true,
       },
       {
-        label: "Pression réelle (hPa)",
+        label: `${t.actual} (${t.pressure}) (hPa)`,
         data: actualPressure,
         borderColor: "rgb(255, 99, 132)",
         backgroundColor: "rgba(255, 99, 132, 0.2)",
@@ -543,17 +589,17 @@ const Comparisons = ({ darkMode }) => {
     labels: forecastTimes,
     datasets: [
       {
-        label: "Différence de température (°C)",
+        label: `${t.difference} (${t.temperature}) (°C)`,
         data: tempDifferences,
         backgroundColor: "rgba(255, 99, 132, 0.6)",
       },
       {
-        label: "Différence d'humidité (%)",
+        label: `${t.difference} (${t.humidity}) (%)`,
         data: humidityDifferences,
         backgroundColor: "rgba(54, 162, 235, 0.6)",
       },
       {
-        label: "Différence de vent (km/h)",
+        label: `${t.difference} (${t.wind}) (km/h)`,
         data: windDifferences,
         backgroundColor: "rgba(255, 206, 86, 0.6)",
       },
@@ -564,7 +610,7 @@ const Comparisons = ({ darkMode }) => {
     labels: forecastTimes,
     datasets: [
       {
-        label: "Précision température (%)",
+        label: `${t.accuracy} (${t.temperature}) (%)`,
         data: tempAccuracy,
         borderColor: "rgb(75, 192, 192)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
@@ -572,7 +618,7 @@ const Comparisons = ({ darkMode }) => {
         fill: true,
       },
       {
-        label: "Précision humidité (%)",
+        label: `${t.accuracy} (${t.humidity}) (%)`,
         data: humidityAccuracy,
         borderColor: "rgb(54, 162, 235)",
         backgroundColor: "rgba(54, 162, 235, 0.2)",
@@ -580,7 +626,7 @@ const Comparisons = ({ darkMode }) => {
         fill: true,
       },
       {
-        label: "Précision vent (%)",
+        label: `${t.accuracy} (${t.wind}) (%)`,
         data: windAccuracy,
         borderColor: "rgb(153, 102, 255)",
         backgroundColor: "rgba(153, 102, 255, 0.2)",
@@ -602,7 +648,7 @@ const Comparisons = ({ darkMode }) => {
       },
       title: {
         display: true,
-        text: "Comparaison des données météorologiques",
+        text: t.hourlyComparison,
         color: darkMode ? "#fff" : "#333",
       },
       tooltip: {
@@ -663,7 +709,7 @@ const Comparisons = ({ darkMode }) => {
       },
       title: {
         display: true,
-        text: "Différences entre prévisions et réalité",
+        text: t.difference,
         color: darkMode ? "#fff" : "#333",
       },
       tooltip: {
@@ -701,54 +747,87 @@ const Comparisons = ({ darkMode }) => {
             <h1 className={`text-2xl font-bold ${textClass}`}>{t.title}</h1>
           </div>
 
-          <form onSubmit={handleSearch} className="flex w-full md:w-auto">
-            <div className="relative flex-grow md:flex-grow-0">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => {
-                  setSearchInput(e.target.value);
-                  fetchCitySuggestions(e.target.value);
-                  setShowSuggestions(true);
-                }}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder="Rechercher une ville..."
-                className={`w-full md:w-64 px-4 py-2 rounded-l-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              />
+          <div className="flex flex-col md:flex-row gap-4 w-full justify-end">
+            <form onSubmit={handleSearch} className="flex w-full md:w-auto">
+              <div className="relative flex-grow md:flex-grow-0">
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => {
+                    setSearchInput(e.target.value);
+                    fetchCitySuggestions(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() =>
+                    setTimeout(() => setShowSuggestions(false), 200)
+                  }
+                  placeholder={t.searchPlaceholder}
+                  className={`w-full md:w-64 px-4 py-2 rounded-l-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
 
-              {showSuggestions && searchSuggestions.length > 0 && (
-                <div
-                  className={`absolute z-10 w-full mt-1 rounded-md shadow-lg ${
-                    darkMode ? "bg-gray-700" : "bg-white"
-                  } border ${
-                    darkMode ? "border-gray-600" : "border-gray-300"
-                  } max-h-60 overflow-auto`}
-                >
-                  {searchSuggestions.map((city, index) => (
-                    <div
-                      key={index}
-                      className={`px-4 py-2 cursor-pointer ${
-                        darkMode ? "hover:bg-gray-600" : "hover:bg-gray-100"
-                      }`}
-                      onClick={() => {
-                        handleCitySelect(city);
-                      }}
-                    >
-                      {city.name}, {city.country}
-                      {city.state && `, ${city.state}`}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              type="submit"
-              className={`px-4 py-2 rounded-r-lg ${buttonClass} text-white`}
+                {showSuggestions && searchSuggestions.length > 0 && (
+                  <div
+                    className={`absolute z-10 w-full mt-1 rounded-md shadow-lg ${
+                      darkMode ? "bg-gray-700" : "bg-white"
+                    } border ${
+                      darkMode ? "border-gray-600" : "border-gray-300"
+                    } max-h-60 overflow-auto`}
+                  >
+                    {searchSuggestions.map((city, index) => (
+                      <div
+                        key={index}
+                        className={`px-4 py-2 cursor-pointer ${
+                          darkMode ? "hover:bg-gray-600" : "hover:bg-gray-100"
+                        }`}
+                        onClick={() => {
+                          handleCitySelect(city);
+                        }}
+                      >
+                        {city.name}, {city.country}
+                        {city.state && `, ${city.state}`}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button
+                type="submit"
+                className={`px-4 py-2 rounded-r-lg ${buttonClass} text-white`}
+              >
+                {t.search}
+              </button>
+            </form>
+
+            <form
+              onSubmit={handleCoordinateSearch}
+              className="flex w-full md:w-auto"
             >
-              Rechercher
-            </button>
-          </form>
+              <div className="relative flex-grow md:flex-grow-0 flex gap-2">
+                <input
+                  type="text"
+                  value={latitudeInput}
+                  onChange={(e) => setLatitudeInput(e.target.value)}
+                  placeholder="Latitude (ex: 30.42)"
+                  className={`w-32 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                <input
+                  type="text"
+                  value={longitudeInput}
+                  onChange={(e) => setLongitudeInput(e.target.value)}
+                  placeholder="Longitude (ex: -9.58)"
+                  className={`w-32 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                <button
+                  type="submit"
+                  className={`px-4 py-2 rounded-lg ${buttonClass} text-white`}
+                >
+                  <FiNavigation className="inline mr-1" />
+                  {t.searchByCoordinates}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
 
         {/* Affichage de la ville actuelle */}
@@ -759,7 +838,7 @@ const Comparisons = ({ darkMode }) => {
             className={`text-lg md:text-xl font-semibold ${textClass} flex items-center`}
           >
             <FiMapPin className="mr-2 text-red-500" />
-            Ville actuelle: <span className="text-blue-600 ml-1">{city}</span>
+            {t.currentCity}: <span className="text-blue-600 ml-1">{city}</span>
           </h2>
           {geolocationError && (
             <div className="text-sm text-yellow-600 flex items-center">
@@ -777,8 +856,7 @@ const Comparisons = ({ darkMode }) => {
             className={`text-lg md:text-xl font-semibold ${textClass} mb-3 md:mb-4 flex items-center`}
           >
             <WiDaySunny className="mr-2 text-yellow-500" size={24} />
-            Comparaison journalière - {todayForecast.dayName}{" "}
-            {todayForecast.date}
+            {t.dailyComparison} - {todayForecast.dayName} {todayForecast.date}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -793,7 +871,7 @@ const Comparisons = ({ darkMode }) => {
                 } flex items-center`}
               >
                 <WiDaySunny className="mr-2" size={20} />
-                Température
+                {t.temperature}
               </h3>
               <div className="flex justify-between items-center mt-2">
                 <div>
@@ -805,7 +883,7 @@ const Comparisons = ({ darkMode }) => {
                     {todayForecast.temp}°C
                   </p>
                   <p className={`text-sm ${secondaryTextClass}`}>
-                    (Prévu: {todayForecast.temp_min}°C -{" "}
+                    ({t.forecast}: {todayForecast.temp_min}°C -{" "}
                     {todayForecast.temp_max}°C)
                   </p>
                 </div>
@@ -814,7 +892,7 @@ const Comparisons = ({ darkMode }) => {
                     todayTempDiff > 0 ? "text-red-500" : "text-green-500"
                   }`}
                 >
-                  <p className="text-sm">Différence</p>
+                  <p className="text-sm">{t.difference}</p>
                   <p className="text-xl font-bold">{todayTempDiff}°C</p>
                 </div>
               </div>
@@ -831,7 +909,7 @@ const Comparisons = ({ darkMode }) => {
                 } flex items-center`}
               >
                 <WiHumidity className="mr-2" size={20} />
-                Humidité
+                {t.humidity}
               </h3>
               <div className="flex justify-between items-center mt-2">
                 <div>
@@ -843,7 +921,7 @@ const Comparisons = ({ darkMode }) => {
                     {todayForecast.humidity}%
                   </p>
                   <p className={`text-sm ${secondaryTextClass}`}>
-                    Ressenti: {todayForecast.feels_like}°C
+                    {t.feels_like}: {todayForecast.feels_like}°C
                   </p>
                 </div>
                 <div
@@ -851,7 +929,7 @@ const Comparisons = ({ darkMode }) => {
                     todayHumidityDiff > 0 ? "text-red-500" : "text-green-500"
                   }`}
                 >
-                  <p className="text-sm">Différence</p>
+                  <p className="text-sm">{t.difference}</p>
                   <p className="text-xl font-bold">{todayHumidityDiff}%</p>
                 </div>
               </div>
@@ -868,7 +946,7 @@ const Comparisons = ({ darkMode }) => {
                 } flex items-center`}
               >
                 <WiStrongWind className="mr-2" size={20} />
-                Vent
+                {t.wind}
               </h3>
               <div className="flex justify-between items-center mt-2">
                 <div>
@@ -880,7 +958,7 @@ const Comparisons = ({ darkMode }) => {
                     {todayForecast.wind_speed} km/h
                   </p>
                   <p className={`text-sm ${secondaryTextClass}`}>
-                    Direction: {todayData.wind.deg}°
+                    {t.direction}: {todayData.wind.deg}°
                   </p>
                 </div>
                 <div
@@ -888,7 +966,7 @@ const Comparisons = ({ darkMode }) => {
                     todayWindDiff > 0 ? "text-red-500" : "text-green-500"
                   }`}
                 >
-                  <p className="text-sm">Différence</p>
+                  <p className="text-sm">{t.difference}</p>
                   <p className="text-xl font-bold">{todayWindDiff} km/h</p>
                 </div>
               </div>
@@ -905,7 +983,7 @@ const Comparisons = ({ darkMode }) => {
                 } flex items-center`}
               >
                 <WiBarometer className="mr-2" size={20} />
-                Conditions
+                {t.conditions}
               </h3>
               <div className="flex justify-between items-center mt-2">
                 <div>
@@ -922,13 +1000,13 @@ const Comparisons = ({ darkMode }) => {
                     {todayForecast.rain > 0 && (
                       <>
                         <WiRain className="mr-1" size={20} />
-                        Pluie: {todayForecast.rain}mm
+                        {t.rain}: {todayForecast.rain}mm
                       </>
                     )}
                     {todayForecast.snow > 0 && (
                       <>
                         <WiSnow className="mr-1" size={20} />
-                        Neige: {todayForecast.snow}mm
+                        {t.snow}: {todayForecast.snow}mm
                       </>
                     )}
                   </p>
@@ -938,7 +1016,9 @@ const Comparisons = ({ darkMode }) => {
                     todayPressureDiff > 0 ? "text-red-500" : "text-green-500"
                   }`}
                 >
-                  <p className="text-sm">Pression diff.</p>
+                  <p className="text-sm">
+                    {t.pressure} {t.difference}
+                  </p>
                   <p className="text-xl font-bold">{todayPressureDiff} hPa</p>
                 </div>
               </div>
@@ -954,7 +1034,7 @@ const Comparisons = ({ darkMode }) => {
               className={`text-lg md:text-xl font-semibold ${textClass} mb-3 md:mb-4 flex items-center`}
             >
               <WiDaySunny className="mr-2 text-yellow-500" size={24} />
-              Comparaison horaire de température
+              {t.hourlyComparison} - {t.temperature}
             </h2>
             <div className="h-64 md:h-80">
               <Line data={tempChartData} options={options} />
@@ -967,7 +1047,7 @@ const Comparisons = ({ darkMode }) => {
               className={`text-lg md:text-xl font-semibold ${textClass} mb-3 md:mb-4 flex items-center`}
             >
               <WiHumidity className="mr-2 text-blue-500" size={24} />
-              Comparaison horaire d'humidité
+              {t.hourlyComparison} - {t.humidity}
             </h2>
             <div className="h-64 md:h-80">
               <Line data={humidityChartData} options={options} />
@@ -980,7 +1060,7 @@ const Comparisons = ({ darkMode }) => {
               className={`text-lg md:text-xl font-semibold ${textClass} mb-3 md:mb-4 flex items-center`}
             >
               <WiStrongWind className="mr-2 text-gray-500" size={24} />
-              Comparaison horaire de vitesse du vent
+              {t.hourlyComparison} - {t.wind}
             </h2>
             <div className="h-64 md:h-80">
               <Line data={windChartData} options={options} />
@@ -993,7 +1073,7 @@ const Comparisons = ({ darkMode }) => {
               className={`text-lg md:text-xl font-semibold ${textClass} mb-3 md:mb-4 flex items-center`}
             >
               <WiBarometer className="mr-2 text-purple-500" size={24} />
-              Comparaison horaire de pression atmosphérique
+              {t.hourlyComparison} - {t.pressure}
             </h2>
             <div className="h-64 md:h-80">
               <Line data={pressureChartData} options={options} />
@@ -1007,7 +1087,7 @@ const Comparisons = ({ darkMode }) => {
             <h2
               className={`text-lg md:text-xl font-semibold ${textClass} mb-3 md:mb-4`}
             >
-              Différences de précision des prévisions horaires
+              {t.difference} {t.accuracy}
             </h2>
             <div className="h-64 md:h-80">
               <Bar data={differenceChartData} options={barOptions} />
@@ -1021,7 +1101,7 @@ const Comparisons = ({ darkMode }) => {
             <h2
               className={`text-lg md:text-xl font-semibold ${textClass} mb-3 md:mb-4`}
             >
-              Pourcentage de précision des prévisions horaires
+              {t.accuracy} (%)
             </h2>
             <div className="h-64 md:h-80">
               <Line data={accuracyChartData} options={options} />
@@ -1035,7 +1115,7 @@ const Comparisons = ({ darkMode }) => {
             <h2
               className={`text-lg md:text-xl font-semibold ${textClass} mb-3 md:mb-4`}
             >
-              Données détaillées de comparaison horaire
+              {t.details}
             </h2>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -1046,42 +1126,42 @@ const Comparisons = ({ darkMode }) => {
                         darkMode ? "text-gray-300" : "text-gray-500"
                       } uppercase tracking-wider`}
                     >
-                      Heure
+                      {t.time}
                     </th>
                     <th
                       className={`px-4 py-2 md:px-6 md:py-3 text-left text-xs md:text-sm font-medium ${
                         darkMode ? "text-gray-300" : "text-gray-500"
                       } uppercase tracking-wider`}
                     >
-                      Température
+                      {t.temperature}
                     </th>
                     <th
                       className={`px-4 py-2 md:px-6 md:py-3 text-left text-xs md:text-sm font-medium ${
                         darkMode ? "text-gray-300" : "text-gray-500"
                       } uppercase tracking-wider`}
                     >
-                      Humidité
+                      {t.humidity}
                     </th>
                     <th
                       className={`px-4 py-2 md:px-6 md:py-3 text-left text-xs md:text-sm font-medium ${
                         darkMode ? "text-gray-300" : "text-gray-500"
                       } uppercase tracking-wider`}
                     >
-                      Vent
+                      {t.wind}
                     </th>
                     <th
                       className={`px-4 py-2 md:px-6 md:py-3 text-left text-xs md:text-sm font-medium ${
                         darkMode ? "text-gray-300" : "text-gray-500"
                       } uppercase tracking-wider`}
                     >
-                      Pression
+                      {t.pressure}
                     </th>
                     <th
                       className={`px-4 py-2 md:px-6 md:py-3 text-left text-xs md:text-sm font-medium ${
                         darkMode ? "text-gray-300" : "text-gray-500"
                       } uppercase tracking-wider`}
                     >
-                      Précision
+                      {t.accuracy}
                     </th>
                   </tr>
                 </thead>
