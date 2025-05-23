@@ -2,11 +2,9 @@ import React, { useState, useEffect } from "react";
 import { NavLink, Route, Routes, Navigate } from "react-router-dom";
 import axios from "axios";
 
-import Param from "../components/Admin/Param/Param";
 import Comparisons from "../components/Admin/Comparisons/Comparisons";
 import Dashboard from "../components/Admin/Dashboard/Dashboard";
 import ProfileEdit from "../components/Admin/Profile/ProfileEdit";
-import UserAlert from "./User/UserAlert";
 
 import {
   Thermometer,
@@ -659,10 +657,7 @@ const User = () => {
 
       case "comparisons":
         return <Comparisons darkMode={darkMode} />;
-      case "param":
-        return <Param darkMode={darkMode} />;
-      case "alerts":
-        return <UserAlert darkMode={darkMode} />;
+
       case "profile":
         return <ProfileEdit darkMode={darkMode} />;
       default:
@@ -725,11 +720,6 @@ const User = () => {
                     to: "/user/profile",
                     icon: <UserIcon size={18} />,
                     label: "Profil",
-                  },
-                  {
-                    to: "/user/param",
-                    icon: <Settings size={18} />,
-                    label: "Paramètres",
                   },
                 ].map((item) => (
                   <li key={item.to}>
@@ -927,15 +917,11 @@ const User = () => {
                 path="/comparisons"
                 element={<Comparisons darkMode={darkMode} />}
               />
-              <Route
-                path="/alerts"
-                element={<UserAlert darkMode={darkMode} />}
-              />
+
               <Route
                 path="/profile"
                 element={<ProfileEdit darkMode={darkMode} />}
               />
-              <Route path="/param" element={<Param darkMode={darkMode} />} />
             </Routes>
           )}
         </main>

@@ -117,7 +117,7 @@ const insertAllCities = async (req, res) => {
     const results = [];
     for (const cityData of cities) {
       try {
-        const [current, forecast, airQuality, uvIndex, alerts] =
+        const [current, forecast, airQuality, uvIndex /*, alerts*/] =
           await Promise.all([
             axios.get(
               `https://api.openweathermap.org/data/2.5/weather?lat=${cityData.lat}&lon=${cityData.lon}&units=metric&appid=${API_KEY}&lang=fr`
@@ -127,7 +127,7 @@ const insertAllCities = async (req, res) => {
             ),
             getAirQuality(cityData.lat, cityData.lon),
             getUVIndex(cityData.lat, cityData.lon),
-            getAlerts(cityData.lat, cityData.lon),
+            // getAlerts(cityData.lat, cityData.lon), // Supprimé comme demandé
           ]);
 
         const forecastDates = [];
@@ -181,16 +181,18 @@ const insertAllCities = async (req, res) => {
             sunset: current.data.sys.sunset,
           },
           forecast: detailedForecast,
-          alerts: alerts,
+          // alerts: alerts, // Supprimé comme demandé
           lastUpdated: new Date(),
         };
 
         await DonneesCollectees.create(weatherDoc);
         results.push({ city: cityData.city, status: "success" });
+
+        console.log(`La ville ${cityData.city} a été insérée avec succès.`);
+
         await new Promise((resolve) => setTimeout(resolve, 1500));
-        console.log(`${cityData.city} a été ajoutée avec succès`);
       } catch (error) {
-        console.log(`${cityData.city} a été ajoutée avec succès`);
+        console.log(`Échec de l'insertion de la ville ${cityData.city}.`);
         results.push({
           city: cityData.city,
           status: "failed",
@@ -198,7 +200,7 @@ const insertAllCities = async (req, res) => {
         });
       }
     }
-    console.log(`${results.length} villes ont été ajoutées avec succès`);
+    console.log(`${results.length} villes ont été traitées.`);
     res.status(200).json({ success: true, data: results });
   } catch (error) {
     res.status(500).json({
@@ -370,9 +372,116 @@ const getHourlyData = async (req, res) => {
     });
   }
 };
+const insertOneCity = async (req, res) => {
+  try {
+    const { lat, lon, city, country, population } = req.body;
+
+    if (!lat || !lon || !city) {
+      return res.status(400).json({
+        success: false,
+        message: "Les coordonnées (lat, lon) et le nom de la ville sont requis",
+      });
+    }
+
+    const [current, forecast, airQuality, uvIndex, alerts] = await Promise.all([
+      axios.get(
+        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&lang=fr`
+      ),
+      axios.get(
+        `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&cnt=40`
+      ),
+      getAirQuality(lat, lon),
+      getUVIndex(lat, lon),
+      getAlerts(lat, lon),
+    ]);
+
+    const forecastDates = [];
+    for (let i = 1; i <= 5; i++) {
+      forecastDates.push(moment().add(i, "days").startOf("day").toDate());
+    }
+
+    const detailedForecast = forecastDates
+      .map((date) => getDayForecastDetails(forecast.data.list, date))
+      .filter(Boolean);
+
+    const weatherDoc = {
+      city: {
+        id: current.data.id,
+        name: city,
+        country: country || current.data.sys.country,
+        coord: {
+          lat: lat,
+          lon: lon,
+        },
+        timezone: current.data.timezone,
+        population: population || current.data.population || 0,
+      },
+      current: {
+        dt: current.data.dt,
+        date: moment(current.data.dt * 1000).format("DD/MM/YYYY"),
+        timestamp: current.data.dt,
+        temp: current.data.main.temp,
+        feels_like: current.data.main.feels_like,
+        temp_min: current.data.main.temp_min,
+        temp_max: current.data.main.temp_max,
+        humidity: current.data.main.humidity,
+        pressure: current.data.main.pressure,
+        weather: {
+          id: current.data.weather[0].id,
+          main: current.data.weather[0].main,
+          description: current.data.weather[0].description,
+          icon: current.data.weather[0].icon,
+        },
+        wind: {
+          speed: current.data.wind.speed,
+          deg: current.data.wind.deg,
+          gust: current.data.wind.gust,
+        },
+        rain: current.data.rain ? current.data.rain["1h"] || 0 : 0,
+        snow: current.data.snow ? current.data.snow["1h"] || 0 : 0,
+        clouds: current.data.clouds.all,
+        uvi: uvIndex,
+        air_quality: airQuality,
+        sunrise: current.data.sys.sunrise,
+        sunset: current.data.sys.sunset,
+      },
+      forecast: detailedForecast,
+      alerts: alerts,
+      lastUpdated: new Date(),
+    };
+
+    const existingCity = await DonneesCollectees.findOne({ "city.name": city });
+
+    if (existingCity) {
+      await DonneesCollectees.updateOne({ _id: existingCity._id }, weatherDoc);
+      console.log(`${city} a été mise à jour avec succès`);
+      return res.status(200).json({
+        success: true,
+        message: `${city} a été mise à jour avec succès`,
+        data: weatherDoc,
+      });
+    } else {
+      await DonneesCollectees.create(weatherDoc);
+      console.log(`${city} a été ajoutée avec succès`);
+      return res.status(201).json({
+        success: true,
+        message: `${city} a été ajoutée avec succès`,
+        data: weatherDoc,
+      });
+    }
+  } catch (error) {
+    console.error("Erreur lors de l'insertion de la ville:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      message: "Erreur lors de l'insertion de la ville",
+    });
+  }
+};
 
 module.exports = {
   insertAllCities,
+  insertOneCity,
   addNextDayForecast,
   getTodayForecast,
   getHourlyData,

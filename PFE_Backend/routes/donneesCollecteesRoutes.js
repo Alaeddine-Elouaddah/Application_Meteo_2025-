@@ -17,7 +17,7 @@ router.get("/add-next-day", async (req, res) => {
 
 // Prévisions du jour
 router.get("/today/:city", controller.getTodayForecast);
-
+router.post("/insert-city", controller.insertOneCity);
 // Données horaires
 router.get("/hourly/:city", controller.getHourlyData);
 router.get("/hourly/:city/:date", controller.getHourlyData);

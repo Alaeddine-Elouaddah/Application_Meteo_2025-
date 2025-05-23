@@ -148,6 +148,8 @@ const Comparisons = ({ darkMode }) => {
   const [coordinateInput, setCoordinateInput] = useState("");
   const [latitudeInput, setLatitudeInput] = useState("");
   const [longitudeInput, setLongitudeInput] = useState("");
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const t = translations[language];
 
@@ -174,14 +176,36 @@ const Comparisons = ({ darkMode }) => {
   // Recherche par coordonnées
   const handleCoordinateSearch = async (e) => {
     e.preventDefault();
-    if (!latitudeInput.trim() || !longitudeInput.trim()) return;
+    if (!latitudeInput.trim() || !longitudeInput.trim()) {
+      setErrorMessage("Veuillez remplir les deux champs de coordonnées");
+      setShowErrorModal(true);
+      return;
+    }
 
     try {
       const lat = parseFloat(latitudeInput.trim());
       const lon = parseFloat(longitudeInput.trim());
 
       if (isNaN(lat) || isNaN(lon)) {
-        throw new Error("Coordonnées invalides");
+        setErrorMessage("Les coordonnées doivent être des nombres valides");
+        setShowErrorModal(true);
+        return;
+      }
+
+      if (lat < -90 || lat > 90) {
+        setErrorMessage(
+          "La latitude doit être comprise entre -90 et 90 degrés"
+        );
+        setShowErrorModal(true);
+        return;
+      }
+
+      if (lon < -180 || lon > 180) {
+        setErrorMessage(
+          "La longitude doit être comprise entre -180 et 180 degrés"
+        );
+        setShowErrorModal(true);
+        return;
       }
 
       setLoading(true);
@@ -199,10 +223,12 @@ const Comparisons = ({ darkMode }) => {
         setLongitudeInput("");
         await fetchWeatherData(cityName);
       } else {
-        throw new Error("Aucune ville trouvée pour ces coordonnées");
+        setErrorMessage("Aucune ville trouvée pour ces coordonnées");
+        setShowErrorModal(true);
       }
     } catch (err) {
-      setError(err.message);
+      setErrorMessage(err.message || "Une erreur est survenue");
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
     }
@@ -740,6 +766,48 @@ const Comparisons = ({ darkMode }) => {
 
   return (
     <div className={`min-h-screen ${bgClass} p-4 md:p-6`}>
+      {/* Modal d'erreur */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div
+            className={`${cardBgClass} p-6 rounded-lg shadow-xl max-w-md w-full mx-4`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-lg font-semibold ${textClass}`}>Erreur</h3>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className={`p-1 rounded-full hover:bg-gray-200 ${
+                  darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"
+                }`}
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <p className={`${textClass} mb-4`}>{errorMessage}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className={`px-4 py-2 rounded-lg ${buttonClass} text-white`}
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
         {/* Barre de recherche améliorée */}
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
@@ -805,17 +873,23 @@ const Comparisons = ({ darkMode }) => {
             >
               <div className="relative flex-grow md:flex-grow-0 flex gap-2">
                 <input
-                  type="text"
+                  type="number"
                   value={latitudeInput}
                   onChange={(e) => setLatitudeInput(e.target.value)}
                   placeholder="Latitude (ex: 30.42)"
+                  min="-90"
+                  max="90"
+                  step="0.000001"
                   className={`w-32 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
                 <input
-                  type="text"
+                  type="number"
                   value={longitudeInput}
                   onChange={(e) => setLongitudeInput(e.target.value)}
                   placeholder="Longitude (ex: -9.58)"
+                  min="-180"
+                  max="180"
+                  step="0.000001"
                   className={`w-32 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
                 <button

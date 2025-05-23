@@ -32,6 +32,11 @@ import {
 import { Line, Bar } from "react-chartjs-2";
 import { AnimatePresence, motion } from "framer-motion";
 import { Tooltip as ReactTooltip } from "react-tooltip";
+import { FiNavigation } from "react-icons/fi";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import MoroccoWeatherMap from "./MoroccoWeatherMap";
 
 ChartJS.register(
   CategoryScale,
@@ -44,6 +49,66 @@ ChartJS.register(
   Legend,
   Filler
 );
+
+const moroccoCities = [
+  { name: "Casablanca", lat: 33.5731, lon: -7.5898 },
+  { name: "Rabat", lat: 34.0209, lon: -6.8416 },
+  { name: "Marrakech", lat: 31.6295, lon: -7.9811 },
+  { name: "Fès", lat: 34.0181, lon: -5.0078 },
+  { name: "Tanger", lat: 35.7595, lon: -5.833 },
+  { name: "Agadir", lat: 30.4278, lon: -9.5981 },
+  { name: "Meknès", lat: 33.8951, lon: -5.5547 },
+  { name: "Oujda", lat: 34.6819, lon: -1.9086 },
+  { name: "Kénitra", lat: 34.261, lon: -6.5802 },
+  { name: "Tétouan", lat: 35.5767, lon: -5.3684 },
+  { name: "El Jadida", lat: 33.2316, lon: -8.5007 },
+  { name: "Nador", lat: 35.1688, lon: -2.9286 },
+  { name: "Settat", lat: 33.0023, lon: -7.6198 },
+  { name: "Khouribga", lat: 32.8847, lon: -6.9167 },
+  { name: "Béni Mellal", lat: 32.3373, lon: -6.3498 },
+];
+
+// Ajouter après les imports
+const customStyles = `
+  .weather-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .weather-marker:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .weather-marker.dark {
+    background: rgba(31, 41, 55, 0.9);
+    color: white;
+  }
+
+  .weather-marker .temperature {
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .weather-marker .icon {
+    margin-top: 2px;
+  }
+
+  .leaflet-popup-content-wrapper {
+    border-radius: 8px;
+  }
+
+  .leaflet-popup-content {
+    margin: 0;
+  }
+`;
 
 const Dashboard = ({ darkMode }) => {
   const [weatherData, setWeatherData] = useState(null);
@@ -64,7 +129,14 @@ const Dashboard = ({ darkMode }) => {
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [geolocationError, setGeolocationError] = useState(null);
+  const [latitudeInput, setLatitudeInput] = useState("");
+  const [longitudeInput, setLongitudeInput] = useState("");
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const API_KEY = "6e601e5bf166b100420a3cf427368540";
+  const [mapData, setMapData] = useState([]);
+  const [mapLoading, setMapLoading] = useState(true);
+
   // Fonction pour détecter la localisation
   const detectLocation = () => {
     if (navigator.geolocation) {
@@ -649,6 +721,104 @@ const Dashboard = ({ darkMode }) => {
     ? "bg-blue-600 hover:bg-blue-700"
     : "bg-blue-500 hover:bg-blue-600";
 
+  // Modifier la fonction handleCoordinateSearch
+  const handleCoordinateSearch = async (e) => {
+    e.preventDefault();
+    if (!latitudeInput.trim() || !longitudeInput.trim()) {
+      setErrorMessage("Veuillez remplir les deux champs de coordonnées");
+      setShowErrorModal(true);
+      return;
+    }
+
+    try {
+      const lat = parseFloat(latitudeInput.trim());
+      const lon = parseFloat(longitudeInput.trim());
+
+      if (isNaN(lat) || isNaN(lon)) {
+        setErrorMessage("Les coordonnées doivent être des nombres valides");
+        setShowErrorModal(true);
+        return;
+      }
+
+      if (lat < -90 || lat > 90) {
+        setErrorMessage(
+          "La latitude doit être comprise entre -90 et 90 degrés"
+        );
+        setShowErrorModal(true);
+        return;
+      }
+
+      if (lon < -180 || lon > 180) {
+        setErrorMessage(
+          "La longitude doit être comprise entre -180 et 180 degrés"
+        );
+        setShowErrorModal(true);
+        return;
+      }
+
+      setLoading(true);
+
+      // Récupérer le nom de la ville à partir des coordonnées
+      const response = await fetch(
+        `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${API_KEY}`
+      );
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        const cityName = data[0].name;
+        setLocation(cityName);
+        setLatitudeInput("");
+        setLongitudeInput("");
+        await fetchWeatherData(cityName);
+      } else {
+        setErrorMessage("Aucune ville trouvée pour ces coordonnées");
+        setShowErrorModal(true);
+      }
+    } catch (err) {
+      setErrorMessage(err.message || "Une erreur est survenue");
+      setShowErrorModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchMapData = async () => {
+      try {
+        const weatherPromises = moroccoCities.map(async (city) => {
+          const response = await fetch(
+            `https://api.openweathermap.org/data/2.5/weather?lat=${city.lat}&lon=${city.lon}&units=metric&appid=${API_KEY}&lang=fr`
+          );
+          const data = await response.json();
+          return {
+            ...city,
+            weather: data,
+          };
+        });
+
+        const results = await Promise.all(weatherPromises);
+        setMapData(results);
+        setMapLoading(false);
+      } catch (error) {
+        console.error("Error fetching map data:", error);
+        setMapLoading(false);
+      }
+    };
+
+    fetchMapData();
+  }, []);
+
+  useEffect(() => {
+    // Ajouter les styles personnalisés
+    const styleSheet = document.createElement("style");
+    styleSheet.textContent = customStyles;
+    document.head.appendChild(styleSheet);
+
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
+  }, []);
+
   if (loading)
     return (
       <div
@@ -696,6 +866,48 @@ const Dashboard = ({ darkMode }) => {
 
   return (
     <div className={`min-h-screen ${bgClass} pb-12`}>
+      {/* Modal d'erreur */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div
+            className={`${cardClass} p-6 rounded-lg shadow-xl max-w-md w-full mx-4`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-lg font-semibold ${textClass}`}>Erreur</h3>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className={`p-1 rounded-full hover:bg-gray-200 ${
+                  darkMode ? "hover:bg-gray-700" : "hover:bg-gray-200"
+                }`}
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <p className={`${textClass} mb-4`}>{errorMessage}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className={`px-4 py-2 rounded-lg ${buttonClass} text-white`}
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header
         className={`sticky top-0 z-10 ${
@@ -775,56 +987,95 @@ const Dashboard = ({ darkMode }) => {
             )}
           </div>
 
-          <form onSubmit={handleSearch} className="flex w-full md:w-auto">
-            <div className="relative flex-grow md:flex-grow-0">
-              <input
-                type="text"
-                value={searchInput}
-                onChange={(e) => {
-                  setSearchInput(e.target.value);
-                  fetchCitySuggestions(e.target.value);
-                  setShowSuggestions(true);
-                }}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder="Rechercher une ville..."
-                className={`w-full md:w-64 px-4 py-2 rounded-l-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-              />
+          <div className="flex flex-col md:flex-row gap-4 w-full justify-end">
+            <form onSubmit={handleSearch} className="flex w-full md:w-auto">
+              <div className="relative flex-grow md:flex-grow-0">
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => {
+                    setSearchInput(e.target.value);
+                    fetchCitySuggestions(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() =>
+                    setTimeout(() => setShowSuggestions(false), 200)
+                  }
+                  placeholder="Rechercher une ville..."
+                  className={`w-full md:w-64 px-4 py-2 rounded-l-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
 
-              {showSuggestions && searchSuggestions.length > 0 && (
-                <div
-                  className={`absolute z-10 w-full mt-1 rounded-md shadow-lg ${
-                    darkMode ? "bg-gray-700" : "bg-white"
-                  } border ${
-                    darkMode ? "border-gray-600" : "border-gray-300"
-                  } max-h-60 overflow-auto`}
-                >
-                  {searchSuggestions.map((city, index) => (
-                    <div
-                      key={index}
-                      className={`px-4 py-2 cursor-pointer ${
-                        darkMode ? "hover:bg-gray-600" : "hover:bg-gray-100"
-                      }`}
-                      onClick={() => {
-                        setLocation(`${city.name}, ${city.country}`);
-                        setSearchInput("");
-                        setSearchSuggestions([]);
-                      }}
-                    >
-                      {city.name}, {city.country}
-                      {city.state && `, ${city.state}`}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <button
-              type="submit"
-              className={`px-4 py-2 rounded-r-lg ${buttonClass} text-white`}
+                {showSuggestions && searchSuggestions.length > 0 && (
+                  <div
+                    className={`absolute z-10 w-full mt-1 rounded-md shadow-lg ${
+                      darkMode ? "bg-gray-700" : "bg-white"
+                    } border ${
+                      darkMode ? "border-gray-600" : "border-gray-300"
+                    } max-h-60 overflow-auto`}
+                  >
+                    {searchSuggestions.map((city, index) => (
+                      <div
+                        key={index}
+                        className={`px-4 py-2 cursor-pointer ${
+                          darkMode ? "hover:bg-gray-600" : "hover:bg-gray-100"
+                        }`}
+                        onClick={() => {
+                          setLocation(`${city.name}, ${city.country}`);
+                          setSearchInput("");
+                          setSearchSuggestions([]);
+                        }}
+                      >
+                        {city.name}, {city.country}
+                        {city.state && `, ${city.state}`}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button
+                type="submit"
+                className={`px-4 py-2 rounded-r-lg ${buttonClass} text-white`}
+              >
+                Rechercher
+              </button>
+            </form>
+
+            <form
+              onSubmit={handleCoordinateSearch}
+              className="flex w-full md:w-auto"
             >
-              Rechercher
-            </button>
-          </form>
+              <div className="relative flex-grow md:flex-grow-0 flex gap-2">
+                <input
+                  type="number"
+                  value={latitudeInput}
+                  onChange={(e) => setLatitudeInput(e.target.value)}
+                  placeholder="Latitude (ex: 30.42)"
+                  min="-90"
+                  max="90"
+                  step="0.000001"
+                  className={`w-32 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                <input
+                  type="number"
+                  value={longitudeInput}
+                  onChange={(e) => setLongitudeInput(e.target.value)}
+                  placeholder="Longitude (ex: -9.58)"
+                  min="-180"
+                  max="180"
+                  step="0.000001"
+                  className={`w-32 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                />
+                <button
+                  type="submit"
+                  className={`px-4 py-2 rounded-lg ${buttonClass} text-white`}
+                >
+                  <FiNavigation className="inline mr-1" />
+                  Rechercher par coordonnées
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </header>
 
@@ -1642,6 +1893,18 @@ const Dashboard = ({ darkMode }) => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Carte météo du Maroc */}
+        <section className="mb-8">
+          <div className={`p-6 rounded-xl shadow ${cardClass}`}>
+            <h3 className={`text-xl font-semibold ${textClass} mb-4`}>
+              Carte météo du Maroc
+            </h3>
+            <div className="w-full flex justify-center">
+              <MoroccoWeatherMap mapData={mapData} />
             </div>
           </div>
         </section>

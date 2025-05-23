@@ -4,7 +4,7 @@ import ProfileEdit from "../Admin/Profile/ProfileEdit";
 import Comparisons from "./Comparisons/Comparisons";
 import Alert from "./Alert/Alert";
 import Userss from "./Users/Users";
-import Param from "./Param/Param";
+
 import Dashboard from "./Dashboard/Dashboard";
 import {
   LayoutDashboard,
@@ -212,13 +212,6 @@ const Admin = () => {
               active={activePath.startsWith("/admin/users")}
               sidebarOpen={sidebarOpen}
             />
-            <SidebarItem
-              icon={Settings}
-              label="Paramètres"
-              to="/admin/settings"
-              active={activePath.startsWith("/admin/settings")}
-              sidebarOpen={sidebarOpen}
-            />
           </nav>
         </div>
       </aside>
@@ -239,7 +232,6 @@ const Admin = () => {
               {activePath.startsWith("/admin/comparisons") && "Comparaisons"}
               {activePath.startsWith("/admin/alerts") && "Alertes météo"}
               {activePath.startsWith("/admin/users") && "Utilisateurs"}
-              {activePath.startsWith("/admin/settings") && "Paramètres"}
             </h1>
           </div>
 
@@ -411,7 +403,7 @@ const Admin = () => {
             />
             <Route path="alerts" element={<Alert darkMode={darkMode} />} />
             <Route path="users" element={<Userss darkMode={darkMode} />} />
-            <Route path="settings" element={<Param darkMode={darkMode} />} />
+
             <Route
               path="profile"
               element={<ProfileEdit darkMode={darkMode} />}
