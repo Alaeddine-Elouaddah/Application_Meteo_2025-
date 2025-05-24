@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { FiPlus, FiTrash2, FiEdit2, FiBell, FiX } from "react-icons/fi";
+import {
+  FiPlus,
+  FiTrash2,
+  FiEdit2,
+  FiBell,
+  FiX,
+  FiAlertTriangle,
+  FiAlertCircle,
+  FiInfo,
+} from "react-icons/fi";
 import Modal from "react-modal";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -33,14 +42,11 @@ const Alert = ({ darkMode }) => {
   const [alertToDelete, setAlertToDelete] = useState(null);
   const [formData, setFormData] = useState({
     type: "temperature",
-    condition: "above",
+    condition: ">",
     value: "",
     frequency: "daily",
+    severity: "Information",
     isActive: true,
-    threshold: {
-      min: "",
-      max: "",
-    },
   });
   const [editingAlert, setEditingAlert] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -80,6 +86,18 @@ const Alert = ({ darkMode }) => {
     alertCreated: "Alerte créée avec succès",
     alertUpdated: "Alerte mise à jour avec succès",
     alertDeleted: "Alerte supprimée avec succès",
+    name: "Nom",
+    description: "Description",
+    severity: "Sévérité",
+    information: "Information",
+    warning: "Avertissement",
+    danger: "Danger",
+    operator: "Opérateur",
+    greater: "> (Supérieur)",
+    less: "< (Inférieur)",
+    equal: "= (Égal)",
+    greaterOrEqual: ">= (Supérieur ou égal)",
+    lessOrEqual: "<= (Inférieur ou égal)",
   };
 
   const t = translations;
@@ -113,10 +131,6 @@ const Alert = ({ darkMode }) => {
     try {
       const alertData = {
         ...formData,
-        threshold: {
-          min: formData.threshold.min || null,
-          max: formData.threshold.max || null,
-        },
       };
 
       if (editingAlert) {
@@ -165,14 +179,11 @@ const Alert = ({ darkMode }) => {
     setEditingAlert(null);
     setFormData({
       type: "temperature",
-      condition: "above",
+      condition: ">",
       value: "",
       frequency: "daily",
+      severity: "Information",
       isActive: true,
-      threshold: {
-        min: "",
-        max: "",
-      },
     });
   };
 
@@ -183,11 +194,8 @@ const Alert = ({ darkMode }) => {
       condition: alert.condition,
       value: alert.value,
       frequency: alert.frequency,
+      severity: alert.severity || "Information",
       isActive: alert.isActive,
-      threshold: {
-        min: alert.threshold?.min || "",
-        max: alert.threshold?.max || "",
-      },
     });
     openModal();
   };
@@ -279,14 +287,11 @@ const Alert = ({ darkMode }) => {
             setEditingAlert(null);
             setFormData({
               type: "temperature",
-              condition: "above",
+              condition: ">",
               value: "",
               frequency: "daily",
+              severity: "Information",
               isActive: true,
-              threshold: {
-                min: "",
-                max: "",
-              },
             });
           }}
           className="bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-600 transition-colors"
@@ -332,6 +337,56 @@ const Alert = ({ darkMode }) => {
                     darkMode ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
+                  {t.operator}
+                </label>
+                <select
+                  value={formData.condition}
+                  onChange={(e) =>
+                    setFormData({ ...formData, condition: e.target.value })
+                  }
+                  className={`w-full p-2 border rounded-md ${
+                    darkMode
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-gray-900 border-gray-300"
+                  }`}
+                >
+                  <option value=">">{t.greater}</option>
+                  <option value="<">{t.less}</option>
+                  <option value="=">{t.equal}</option>
+                  <option value=">=">{t.greaterOrEqual}</option>
+                  <option value="<=">{t.lessOrEqual}</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  {t.severity}
+                </label>
+                <select
+                  value={formData.severity}
+                  onChange={(e) =>
+                    setFormData({ ...formData, severity: e.target.value })
+                  }
+                  className={`w-full p-2 border rounded-md ${
+                    darkMode
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-gray-900 border-gray-300"
+                  }`}
+                >
+                  <option value="Danger">{t.danger}</option>
+                  <option value="Avertissement">{t.warning}</option>
+                  <option value="Information">{t.information}</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  className={`block text-sm font-medium mb-1 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
                   {t.type}
                 </label>
                 <select
@@ -350,31 +405,6 @@ const Alert = ({ darkMode }) => {
                   <option value="wind">{t.wind}</option>
                   <option value="pressure">{t.pressure}</option>
                   <option value="rain">{t.rain}</option>
-                </select>
-              </div>
-
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-1 ${
-                    darkMode ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  {t.condition}
-                </label>
-                <select
-                  value={formData.condition}
-                  onChange={(e) =>
-                    setFormData({ ...formData, condition: e.target.value })
-                  }
-                  className={`w-full p-2 border rounded-md ${
-                    darkMode
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-gray-900 border-gray-300"
-                  }`}
-                >
-                  <option value="above">{t.above}</option>
-                  <option value="below">{t.below}</option>
-                  <option value="equals">{t.equals}</option>
                 </select>
               </div>
 
@@ -424,56 +454,6 @@ const Alert = ({ darkMode }) => {
                   <option value="weekly">{t.weekly}</option>
                   <option value="monthly">{t.monthly}</option>
                 </select>
-              </div>
-
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-1 ${
-                    darkMode ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  Seuil minimum
-                </label>
-                <input
-                  type="number"
-                  value={formData.threshold.min}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      threshold: { ...formData.threshold, min: e.target.value },
-                    })
-                  }
-                  className={`w-full p-2 border rounded-md ${
-                    darkMode
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-gray-900 border-gray-300"
-                  }`}
-                />
-              </div>
-
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-1 ${
-                    darkMode ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  Seuil maximum
-                </label>
-                <input
-                  type="number"
-                  value={formData.threshold.max}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      threshold: { ...formData.threshold, max: e.target.value },
-                    })
-                  }
-                  className={`w-full p-2 border rounded-md ${
-                    darkMode
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-gray-900 border-gray-300"
-                  }`}
-                />
               </div>
             </div>
 
@@ -597,13 +577,34 @@ const Alert = ({ darkMode }) => {
                   </div>
                 </div>
                 <span
-                  className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    alert.isActive
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
+                  className={`flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full
+                    ${
+                      alert.severity === "Danger"
+                        ? "bg-red-100 text-red-800"
+                        : ""
+                    }
+                    ${
+                      alert.severity === "Avertissement"
+                        ? "bg-orange-100 text-orange-800"
+                        : ""
+                    }
+                    ${
+                      alert.severity === "Information"
+                        ? "bg-blue-100 text-blue-800"
+                        : ""
+                    }
+                  `}
                 >
-                  {alert.isActive ? t.active : t.inactive}
+                  {alert.severity === "Danger" && (
+                    <FiAlertTriangle className="text-red-500" />
+                  )}
+                  {alert.severity === "Avertissement" && (
+                    <FiAlertCircle className="text-orange-500" />
+                  )}
+                  {alert.severity === "Information" && (
+                    <FiInfo className="text-blue-500" />
+                  )}
+                  {alert.severity}
                 </span>
               </div>
 
@@ -642,46 +643,22 @@ const Alert = ({ darkMode }) => {
                   </span>
                 </div>
 
-                {alert.threshold && (
-                  <>
-                    {alert.threshold.min && (
-                      <div className="flex justify-between">
-                        <span
-                          className={`text-sm ${
-                            darkMode ? "text-gray-300" : "text-gray-600"
-                          }`}
-                        >
-                          Min:
-                        </span>
-                        <span
-                          className={`text-sm font-medium ${
-                            darkMode ? "text-white" : "text-gray-900"
-                          }`}
-                        >
-                          {alert.threshold.min}
-                        </span>
-                      </div>
-                    )}
-                    {alert.threshold.max && (
-                      <div className="flex justify-between">
-                        <span
-                          className={`text-sm ${
-                            darkMode ? "text-gray-300" : "text-gray-600"
-                          }`}
-                        >
-                          Max:
-                        </span>
-                        <span
-                          className={`text-sm font-medium ${
-                            darkMode ? "text-white" : "text-gray-900"
-                          }`}
-                        >
-                          {alert.threshold.max}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
+                <div className="flex justify-between">
+                  <span
+                    className={`text-sm ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}
+                  >
+                    Sévérité:
+                  </span>
+                  <span
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    {alert.severity}
+                  </span>
+                </div>
               </div>
 
               <div className="mt-6 flex justify-end space-x-2">

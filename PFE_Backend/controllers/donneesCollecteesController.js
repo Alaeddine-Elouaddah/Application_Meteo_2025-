@@ -117,18 +117,16 @@ const insertAllCities = async (req, res) => {
     const results = [];
     for (const cityData of cities) {
       try {
-        const [current, forecast, airQuality, uvIndex /*, alerts*/] =
-          await Promise.all([
-            axios.get(
-              `https://api.openweathermap.org/data/2.5/weather?lat=${cityData.lat}&lon=${cityData.lon}&units=metric&appid=${API_KEY}&lang=fr`
-            ),
-            axios.get(
-              `https://api.openweathermap.org/data/2.5/forecast?lat=${cityData.lat}&lon=${cityData.lon}&units=metric&appid=${API_KEY}&cnt=40`
-            ),
-            getAirQuality(cityData.lat, cityData.lon),
-            getUVIndex(cityData.lat, cityData.lon),
-            // getAlerts(cityData.lat, cityData.lon), // Supprimé comme demandé
-          ]);
+        const [current, forecast, airQuality, uvIndex] = await Promise.all([
+          axios.get(
+            `https://api.openweathermap.org/data/2.5/weather?lat=${cityData.lat}&lon=${cityData.lon}&units=metric&appid=${API_KEY}&lang=fr`
+          ),
+          axios.get(
+            `https://api.openweathermap.org/data/2.5/forecast?lat=${cityData.lat}&lon=${cityData.lon}&units=metric&appid=${API_KEY}&cnt=40`
+          ),
+          getAirQuality(cityData.lat, cityData.lon),
+          getUVIndex(cityData.lat, cityData.lon),
+        ]);
 
         const forecastDates = [];
         for (let i = 1; i <= 5; i++) {
@@ -139,14 +137,15 @@ const insertAllCities = async (req, res) => {
           .map((date) => getDayForecastDetails(forecast.data.list, date))
           .filter(Boolean);
 
+        // Création du document avec le nom ORIGINAL du fichier (cityData.city)
         const weatherDoc = {
           city: {
             id: current.data.id,
-            name: current.data.name,
+            name: cityData.city, // <-- Ici on force le nom du fichier (ex: "Azemmour")
             country: current.data.sys.country,
             coord: {
-              lat: current.data.coord.lat,
-              lon: current.data.coord.lon,
+              lat: cityData.lat, // <-- On utilise aussi les coordonnées du fichier
+              lon: cityData.lon,
             },
             timezone: current.data.timezone,
             population: current.data.population,
@@ -181,18 +180,25 @@ const insertAllCities = async (req, res) => {
             sunset: current.data.sys.sunset,
           },
           forecast: detailedForecast,
-          // alerts: alerts, // Supprimé comme demandé
           lastUpdated: new Date(),
         };
 
-        await DonneesCollectees.create(weatherDoc);
-        results.push({ city: cityData.city, status: "success" });
+        // Upsert pour éviter les doublons (recherche par coordonnées)
+        await DonneesCollectees.findOneAndUpdate(
+          {
+            "city.coord.lat": cityData.lat,
+            "city.coord.lon": cityData.lon,
+          },
+          weatherDoc,
+          { upsert: true }
+        );
 
-        console.log(`La ville ${cityData.city} a été insérée avec succès.`);
+        results.push({ city: cityData.city, status: "success" });
+        console.log(`✅ ${cityData.city} insérée (nom original conservé)`);
 
         await new Promise((resolve) => setTimeout(resolve, 1500));
       } catch (error) {
-        console.log(`Échec de l'insertion de la ville ${cityData.city}.`);
+        console.log(`❌ ${cityData.city} : ${error.message}`);
         results.push({
           city: cityData.city,
           status: "failed",
@@ -200,13 +206,12 @@ const insertAllCities = async (req, res) => {
         });
       }
     }
-    console.log(`${results.length} villes ont été traitées.`);
     res.status(200).json({ success: true, data: results });
   } catch (error) {
     res.status(500).json({
       success: false,
       error: error.message,
-      message: "Erreur lors de l'insertion des villes",
+      message: "Erreur globale lors de l'insertion",
     });
   }
 };

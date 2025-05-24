@@ -10,7 +10,7 @@ const alertSchema = new mongoose.Schema(
     condition: {
       type: String,
       required: true,
-      enum: ["above", "below", "equals"],
+      enum: [">", "<", "=", ">=", "<="],
     },
     value: {
       type: Number,
@@ -31,6 +31,13 @@ const alertSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: ["daily", "weekly", "monthly"],
+    },
+
+    severity: {
+      type: String,
+      required: true,
+      enum: ["Information", "Avertissement", "Danger"],
+      default: "Information",
     },
 
     isActive: {

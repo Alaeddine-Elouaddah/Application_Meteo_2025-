@@ -50,24 +50,6 @@ ChartJS.register(
   Filler
 );
 
-const moroccoCities = [
-  { name: "Casablanca", lat: 33.5731, lon: -7.5898 },
-  { name: "Rabat", lat: 34.0209, lon: -6.8416 },
-  { name: "Marrakech", lat: 31.6295, lon: -7.9811 },
-  { name: "Fès", lat: 34.0181, lon: -5.0078 },
-  { name: "Tanger", lat: 35.7595, lon: -5.833 },
-  { name: "Agadir", lat: 30.4278, lon: -9.5981 },
-  { name: "Meknès", lat: 33.8951, lon: -5.5547 },
-  { name: "Oujda", lat: 34.6819, lon: -1.9086 },
-  { name: "Kénitra", lat: 34.261, lon: -6.5802 },
-  { name: "Tétouan", lat: 35.5767, lon: -5.3684 },
-  { name: "El Jadida", lat: 33.2316, lon: -8.5007 },
-  { name: "Nador", lat: 35.1688, lon: -2.9286 },
-  { name: "Settat", lat: 33.0023, lon: -7.6198 },
-  { name: "Khouribga", lat: 32.8847, lon: -6.9167 },
-  { name: "Béni Mellal", lat: 32.3373, lon: -6.3498 },
-];
-
 // Ajouter après les imports
 const customStyles = `
   .weather-marker {
@@ -1465,7 +1447,6 @@ const Dashboard = ({ darkMode }) => {
               )}
             </div>
           </div>
-
           {/* Deuxième ligne - Prévisions horaires détaillées */}
           <div className={`p-6 rounded-xl shadow-lg ${cardClass}`}>
             <h3 className={`text-xl font-semibold ${textClass} mb-4`}>

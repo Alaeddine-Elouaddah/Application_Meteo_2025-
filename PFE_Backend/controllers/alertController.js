@@ -95,6 +95,23 @@ exports.deleteAlert = async (req, res) => {
 };
 
 // Vérifier et envoyer les alertes
+function checkCondition(operator, currentValue, alertValue) {
+  switch (operator) {
+    case ">":
+      return currentValue > alertValue;
+    case "<":
+      return currentValue < alertValue;
+    case "=":
+      return Math.abs(currentValue - alertValue) < 0.1;
+    case ">=":
+      return currentValue >= alertValue;
+    case "<=":
+      return currentValue <= alertValue;
+    default:
+      return false;
+  }
+}
+
 exports.checkAndSendAlerts = async () => {
   try {
     const alerts = await Alert.find({ isActive: true }).populate("userId");
@@ -143,24 +160,19 @@ exports.checkAndSendAlerts = async () => {
         }
       } else {
         // Vérifier la condition normale si pas de seuils
-        switch (alert.condition) {
-          case "above":
-            shouldSendAlert = currentValue > alert.value;
-            break;
-          case "below":
-            shouldSendAlert = currentValue < alert.value;
-            break;
-          case "equals":
-            shouldSendAlert = Math.abs(currentValue - alert.value) < 0.1;
-            break;
-        }
+        shouldSendAlert = checkCondition(
+          alert.condition,
+          currentValue,
+          alert.value
+        );
       }
 
       if (shouldSendAlert) {
         const user = alert.userId;
-        const subject = `Alerte météo pour ${alert.city}`;
+        const subject = `Alerte météo pour ${alert.city || ""}`;
         let message = `Bonjour ${user.username},\n\n`;
-        message += `Une alerte a été déclenchée pour ${alert.city} :\n\n`;
+        message += `Une alerte a été déclenchée pour ${alert.city || ""} :\n\n`;
+        message += `Sévérité : ${alert.severity}\n`;
 
         if (alert.threshold) {
           if (currentValue < alert.threshold.min) {
