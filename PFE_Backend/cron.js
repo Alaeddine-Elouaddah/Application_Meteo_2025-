@@ -5,7 +5,7 @@ const {
 const alertController = require("./controllers/alertController");
 
 // Exécuter chaque jour à 10h30 du matin pour ajouter le jour suivant
-cron.schedule("32 10 * * *", () => {
+cron.schedule("56 14 * * *", () => {
   console.log("⏰ Exécution du cron job pour ajouter le jour suivant à 10h30");
   addNextDayForecast();
 });

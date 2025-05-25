@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { NavLink, Route, Routes, Navigate } from "react-router-dom";
+import {
+  NavLink,
+  Route,
+  Routes,
+  Navigate,
+  useNavigate,
+  Link,
+} from "react-router-dom";
 import axios from "axios";
 
 import Comparisons from "../components/Admin/Comparisons/Comparisons";
@@ -23,6 +30,7 @@ import {
   BarChart2,
   Home,
   User as UserIcon,
+  LogOut,
 } from "lucide-react";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
@@ -183,6 +191,8 @@ const User = () => {
 
   const OPENWEATHER_API_KEY = "6e601e5bf166b100420a3cf427368540";
   const OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5";
+
+  const navigate = useNavigate();
 
   const fetchWeatherData = async () => {
     try {
@@ -742,150 +752,43 @@ const User = () => {
                     </NavLink>
                   </li>
                 ))}
+                {/* Bouton de déconnexion */}
+                <li>
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center transition-colors duration-200"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(
+                          "http://localhost:8000/api/auth/logout",
+                          {
+                            method: "POST",
+                            headers: {
+                              Authorization: `Bearer ${localStorage.getItem(
+                                "token"
+                              )}`,
+                              "Content-Type": "application/json",
+                            },
+                          }
+                        );
+
+                        if (response.ok) {
+                          localStorage.removeItem("token");
+                          window.location.href = "/";
+                        } else {
+                          console.error("Échec de la déconnexion");
+                        }
+                      } catch (error) {
+                        console.error("Erreur lors de la déconnexion:", error);
+                      }
+                      setProfileMenuOpen(false);
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Déconnexion
+                  </button>
+                </li>
               </ul>
             </nav>
-
-            {/* Formulaire de recherche avec animation */}
-            <form onSubmit={handleSearch} className="mb-6">
-              <div className="relative group">
-                <input
-                  type="text"
-                  value={inputCity}
-                  onChange={(e) => setInputCity(e.target.value)}
-                  placeholder="Rechercher une ville..."
-                  className={`w-full pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
-                    darkMode ? "bg-gray-700 text-white" : "bg-white border"
-                  }`}
-                />
-                <Search
-                  className="absolute left-3 top-3 text-gray-400 group-hover:text-blue-500 transition-colors duration-200"
-                  size={16}
-                />
-              </div>
-              <div className="flex gap-2 mt-2">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg transition-all duration-200 transform hover:scale-105"
-                >
-                  Rechercher
-                </button>
-                <button
-                  type="button"
-                  onClick={handleLocateMe}
-                  disabled={isFetchingLocation}
-                  className={`p-2 rounded-lg transition-all duration-200 ${
-                    darkMode
-                      ? "bg-gray-700 hover:bg-gray-600"
-                      : "bg-gray-200 hover:bg-gray-300"
-                  } ${isFetchingLocation ? "animate-spin" : ""}`}
-                >
-                  <Locate size={18} />
-                </button>
-              </div>
-            </form>
-
-            {locationError && (
-              <div
-                className={`p-3 mb-4 rounded ${
-                  darkMode
-                    ? "bg-yellow-900 text-yellow-200"
-                    : "bg-yellow-100 text-yellow-700"
-                }`}
-              >
-                {locationError}
-              </div>
-            )}
-
-            {/* Affichage de la ville actuelle avec animation */}
-            <div
-              className={`p-4 rounded-lg mb-6 transition-all duration-200 ${
-                darkMode ? "bg-gray-700" : "bg-blue-50"
-              } hover:shadow-lg`}
-            >
-              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                <MapPin size={16} className="text-blue-500" /> Ville actuelle
-              </h2>
-              <p className="text-blue-500 font-medium">
-                {city || "Aucune ville sélectionnée"}
-              </p>
-              {userLocation && userLocation.lat && userLocation.lon && (
-                <p className="text-xs mt-1 opacity-75">
-                  {userLocation.lat.toFixed(6)}, {userLocation.lon.toFixed(6)}
-                </p>
-              )}
-            </div>
-
-            {/* Carte Interactive */}
-            {userLocation && userLocation.lat && userLocation.lon && (
-              <div
-                className={`p-4 rounded-lg mb-6 ${
-                  darkMode ? "bg-gray-700" : "bg-blue-50"
-                }`}
-              >
-                <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                  <Navigation size={16} /> Carte de localisation
-                </h2>
-                <InteractiveMap location={userLocation} darkMode={darkMode} />
-                <div className="mt-2 text-center">
-                  <a
-                    href={`https://www.google.com/maps?q=${userLocation.lat},${userLocation.lon}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`text-sm ${
-                      darkMode ? "text-blue-400" : "text-blue-600"
-                    } hover:underline`}
-                  >
-                    Ouvrir dans Google Maps
-                  </a>
-                </div>
-              </div>
-            )}
-
-            <div
-              className={`p-4 rounded-lg flex-grow ${
-                darkMode ? "bg-gray-700" : "bg-blue-50"
-              }`}
-            >
-              <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                <Calendar size={16} /> Prévisions 7 jours
-              </h2>
-              <div className="space-y-2">
-                {Array.from({ length: 7 }).map((_, index) => {
-                  const forecastDay = getForecastForDay(index);
-                  return (
-                    <div
-                      key={index}
-                      className={`flex items-center justify-between py-2 ${
-                        darkMode ? "border-gray-600" : "border-gray-200"
-                      } border-b`}
-                    >
-                      <span>
-                        {new Date(
-                          new Date().getTime() + index * 24 * 60 * 60 * 1000
-                        ).toLocaleDateString("fr-FR", {
-                          weekday: "short",
-                          day: "numeric",
-                        })}
-                      </span>
-                      {forecastDay ? (
-                        <div className="flex items-center gap-2">
-                          <img
-                            src={`https://openweathermap.org/img/wn/${forecastDay.weather[0].icon}@2x.png`}
-                            alt={forecastDay.weather[0].description}
-                            className="w-8 h-8"
-                          />
-                          <span className="font-medium">
-                            {Math.round(forecastDay.main.temp)}°C
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">--</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </aside>
 
@@ -917,7 +820,6 @@ const User = () => {
                 path="/comparisons"
                 element={<Comparisons darkMode={darkMode} />}
               />
-
               <Route
                 path="/profile"
                 element={<ProfileEdit darkMode={darkMode} />}

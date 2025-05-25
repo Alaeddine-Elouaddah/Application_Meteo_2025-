@@ -58,7 +58,7 @@ const Alert = ({ darkMode }) => {
     editAlert: "Modifier l'alerte",
     type: "Type",
     condition: "Condition",
-    value: "Valeur",
+    value: "Seuil",
     frequency: "Fréquence",
     active: "Active",
     inactive: "Inactive",
@@ -72,6 +72,7 @@ const Alert = ({ darkMode }) => {
     wind: "Vent",
     pressure: "Pression",
     rain: "Pluie",
+    uv: "UV",
     above: "Supérieur à",
     below: "Inférieur à",
     equals: "Égal à",
@@ -131,20 +132,34 @@ const Alert = ({ darkMode }) => {
     try {
       const alertData = {
         ...formData,
+        value: Number(formData.value),
       };
 
       if (editingAlert) {
-        await api.patch(`/alerts/${editingAlert._id}`, alertData);
-        toast.success(t.alertUpdated);
+        const response = await api.patch(
+          `/alerts/${editingAlert._id}`,
+          alertData
+        );
+        if (response.data.status === "success") {
+          toast.success(t.alertUpdated);
+          closeModal();
+          fetchAlerts();
+        } else {
+          toast.error(response.data.message || t.saveError);
+        }
       } else {
-        await api.post("/alerts", alertData);
-        toast.success(t.alertCreated);
+        const response = await api.post("/alerts", alertData);
+        if (response.data.status === "success") {
+          toast.success(t.alertCreated);
+          closeModal();
+          fetchAlerts();
+        } else {
+          toast.error(response.data.message || t.saveError);
+        }
       }
-      closeModal();
-      fetchAlerts();
     } catch (err) {
-      setError(t.saveError);
-      toast.error(t.saveError);
+      console.error("Erreur lors de la sauvegarde:", err);
+      toast.error(err.response?.data?.message || t.saveError);
     }
   };
 
@@ -191,13 +206,79 @@ const Alert = ({ darkMode }) => {
     setEditingAlert(alert);
     setFormData({
       type: alert.type,
+      severity: alert.severity || "Information",
       condition: alert.condition,
       value: alert.value,
       frequency: alert.frequency,
-      severity: alert.severity || "Information",
       isActive: alert.isActive,
     });
     openModal();
+  };
+
+  const getUnitForType = (type) => {
+    switch (type) {
+      case "temperature":
+        return "°C";
+      case "humidity":
+        return "%";
+      case "wind":
+        return "km/h";
+      case "pressure":
+        return "hPa";
+      case "rain":
+        return "mm";
+      case "uv":
+        return "UV";
+      default:
+        return "";
+    }
+  };
+
+  const getTypeLabel = (type) => {
+    switch (type) {
+      case "temperature":
+        return "Température";
+      case "humidity":
+        return "Humidité";
+      case "wind":
+        return "Vent";
+      case "pressure":
+        return "Pression";
+      case "rain":
+        return "Pluie";
+      case "uv":
+        return "UV";
+      default:
+        return type;
+    }
+  };
+
+  const getConditionText = (condition) => {
+    switch (condition) {
+      case ">":
+        return "supérieur à";
+      case "<":
+        return "inférieur à";
+      case "=":
+        return "égal à";
+      case ">=":
+        return "supérieur ou égal à";
+      case "<=":
+        return "inférieur ou égal à";
+      default:
+        return condition;
+    }
+  };
+
+  const formatValueWithUnit = (type, value) => {
+    const unit = getUnitForType(type);
+    return `${value} ${unit}`;
+  };
+
+  const formatAlertCondition = (alert) => {
+    return `${getTypeLabel(alert.type)} ${getConditionText(
+      alert.condition
+    )} ${formatValueWithUnit(alert.type, alert.value)}`;
   };
 
   const getTypeIcon = (type, isActive = true) => {
@@ -210,6 +291,7 @@ const Alert = ({ darkMode }) => {
       wind: "#2ECC71", // Vert pour vent
       pressure: "#9B59B6", // Violet pour pression
       rain: "#2980B9", // Bleu foncé pour pluie
+      uv: "#F1C40F", // Jaune pour UV
       default: darkMode ? "#FFFFFF" : "#000000",
     };
 
@@ -237,21 +319,12 @@ const Alert = ({ darkMode }) => {
         );
       case "rain":
         return <WiRain size={iconSize} color={iconColor} className={opacity} />;
+      case "uv":
+        return (
+          <WiDaySunny size={iconSize} color={iconColor} className={opacity} />
+        );
       default:
         return <FiBell size={iconSize} color={iconColor} className={opacity} />;
-    }
-  };
-
-  const getConditionText = (condition) => {
-    switch (condition) {
-      case "above":
-        return t.above;
-      case "below":
-        return t.below;
-      case "equals":
-        return t.equals;
-      default:
-        return condition;
     }
   };
 
@@ -337,12 +410,12 @@ const Alert = ({ darkMode }) => {
                     darkMode ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
-                  {t.operator}
+                  {t.type}
                 </label>
                 <select
-                  value={formData.condition}
+                  value={formData.type}
                   onChange={(e) =>
-                    setFormData({ ...formData, condition: e.target.value })
+                    setFormData({ ...formData, type: e.target.value })
                   }
                   className={`w-full p-2 border rounded-md ${
                     darkMode
@@ -350,11 +423,12 @@ const Alert = ({ darkMode }) => {
                       : "bg-white text-gray-900 border-gray-300"
                   }`}
                 >
-                  <option value=">">{t.greater}</option>
-                  <option value="<">{t.less}</option>
-                  <option value="=">{t.equal}</option>
-                  <option value=">=">{t.greaterOrEqual}</option>
-                  <option value="<=">{t.lessOrEqual}</option>
+                  <option value="temperature">{t.temperature}</option>
+                  <option value="humidity">{t.humidity}</option>
+                  <option value="wind">{t.wind}</option>
+                  <option value="pressure">{t.pressure}</option>
+                  <option value="rain">{t.rain}</option>
+                  <option value="uv">{t.uv}</option>
                 </select>
               </div>
               <div>
@@ -387,12 +461,12 @@ const Alert = ({ darkMode }) => {
                     darkMode ? "text-gray-300" : "text-gray-700"
                   }`}
                 >
-                  {t.type}
+                  {t.operator}
                 </label>
                 <select
-                  value={formData.type}
+                  value={formData.condition}
                   onChange={(e) =>
-                    setFormData({ ...formData, type: e.target.value })
+                    setFormData({ ...formData, condition: e.target.value })
                   }
                   className={`w-full p-2 border rounded-md ${
                     darkMode
@@ -400,14 +474,13 @@ const Alert = ({ darkMode }) => {
                       : "bg-white text-gray-900 border-gray-300"
                   }`}
                 >
-                  <option value="temperature">{t.temperature}</option>
-                  <option value="humidity">{t.humidity}</option>
-                  <option value="wind">{t.wind}</option>
-                  <option value="pressure">{t.pressure}</option>
-                  <option value="rain">{t.rain}</option>
+                  <option value=">">{t.greater}</option>
+                  <option value="<">{t.less}</option>
+                  <option value="=">{t.equal}</option>
+                  <option value=">=">{t.greaterOrEqual}</option>
+                  <option value="<=">{t.lessOrEqual}</option>
                 </select>
               </div>
-
               <div>
                 <label
                   className={`block text-sm font-medium mb-1 ${
@@ -416,21 +489,30 @@ const Alert = ({ darkMode }) => {
                 >
                   {t.value}
                 </label>
-                <input
-                  type="number"
-                  value={formData.value}
-                  onChange={(e) =>
-                    setFormData({ ...formData, value: e.target.value })
-                  }
-                  className={`w-full p-2 border rounded-md ${
-                    darkMode
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-gray-900 border-gray-300"
-                  }`}
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={formData.value}
+                    onChange={(e) =>
+                      setFormData({ ...formData, value: e.target.value })
+                    }
+                    className={`w-full p-2 border rounded-md pr-12 ${
+                      darkMode
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-white text-gray-900 border-gray-300"
+                    }`}
+                    required
+                  />
+                  <span
+                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    {getUnitForType(formData.type)}
+                  </span>
+                </div>
               </div>
-
               <div>
                 <label
                   className={`block text-sm font-medium mb-1 ${
@@ -622,7 +704,43 @@ const Alert = ({ darkMode }) => {
                       darkMode ? "text-white" : "text-gray-900"
                     }`}
                   >
-                    {getConditionText(alert.condition)} {alert.value}
+                    {getTypeLabel(alert.type)}{" "}
+                    {getConditionText(alert.condition)}{" "}
+                    <span className="font-bold">{alert.value}</span>
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span
+                    className={`text-sm ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}
+                  >
+                    Seuil:
+                  </span>
+                  <span
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    {alert.value} {getUnitForType(alert.type)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span
+                    className={`text-sm ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}
+                  >
+                    Sévérité:
+                  </span>
+                  <span
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    {alert.severity}
                   </span>
                 </div>
 
@@ -643,20 +761,27 @@ const Alert = ({ darkMode }) => {
                   </span>
                 </div>
 
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span
                     className={`text-sm ${
                       darkMode ? "text-gray-300" : "text-gray-600"
                     }`}
                   >
-                    Sévérité:
+                    Statut:
                   </span>
                   <span
-                    className={`text-sm font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
+                    className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${
+                      alert.isActive
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-800"
                     }`}
                   >
-                    {alert.severity}
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        alert.isActive ? "bg-green-500" : "bg-gray-500"
+                      }`}
+                    />
+                    {alert.isActive ? t.active : t.inactive}
                   </span>
                 </div>
               </div>

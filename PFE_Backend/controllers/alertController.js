@@ -42,27 +42,42 @@ exports.getUserAlerts = async (req, res) => {
 // Mettre à jour une alerte
 exports.updateAlert = async (req, res) => {
   try {
-    const alert = await Alert.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
-      req.body,
-      { new: true, runValidators: true }
-    );
+    // Vérifier si l'alerte existe et appartient à l'utilisateur
+    const existingAlert = await Alert.findOne({
+      _id: req.params.id,
+      userId: req.user._id,
+    });
 
-    if (!alert) {
+    if (!existingAlert) {
       return res.status(404).json({
         status: "fail",
         message: "Alerte non trouvée",
       });
     }
 
+    // Mettre à jour l'alerte avec validation
+    const alert = await Alert.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user._id },
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+        context: "query",
+      }
+    );
+
     res.status(200).json({
       status: "success",
       data: { alert },
     });
   } catch (err) {
+    console.error("Erreur lors de la mise à jour de l'alerte:", err);
     res.status(400).json({
       status: "error",
-      message: err.message,
+      message: err.message || "Erreur lors de la mise à jour de l'alerte",
+      details: err.errors
+        ? Object.values(err.errors).map((e) => e.message)
+        : undefined,
     });
   }
 };
@@ -141,6 +156,9 @@ exports.checkAndSendAlerts = async () => {
           break;
         case "rain":
           currentValue = weatherData.rain ? weatherData.rain["1h"] || 0 : 0;
+          break;
+        case "uv":
+          currentValue = weatherData.uvi || 0;
           break;
       }
 

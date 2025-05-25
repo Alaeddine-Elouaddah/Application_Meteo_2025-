@@ -220,55 +220,98 @@ const addNextDayForecast = async (req, res) => {
   try {
     const allCities = await DonneesCollectees.find({});
     const results = [];
+    const currentDate = new Date();
+
+    console.log(
+      `\n📅 ${currentDate.toLocaleDateString()} - Début de la mise à jour des prévisions`
+    );
 
     for (const cityDoc of allCities) {
       try {
+        // Trouver la date du dernier forecast
+        const lastForecastDate =
+          cityDoc.forecast.length > 0
+            ? moment(
+                cityDoc.forecast[cityDoc.forecast.length - 1].date,
+                "DD/MM/YYYY"
+              )
+            : moment().subtract(1, "day"); // Fallback si pas de forecast
+
+        // Date du prochain jour à ajouter
+        const nextDayDate = lastForecastDate
+          .clone()
+          .add(1, "day")
+          .startOf("day");
+        const nextDayFormatted = nextDayDate.format("DD/MM/YYYY");
+
+        // Vérifier si la date est dans le futur (pas plus de 7 jours)
+        if (nextDayDate.isAfter(moment().add(7, "days"))) {
+          results.push({
+            city: cityDoc.city.name,
+            status: "max_days_reached",
+            message: `Prévisions déjà disponibles jusqu'à ${nextDayDate
+              .subtract(1, "day")
+              .format("DD/MM/YYYY")}`,
+          });
+          continue;
+        }
+
+        // Vérifier si la date existe déjà
+        const exists = cityDoc.forecast.some(
+          (f) => f.date === nextDayFormatted
+        );
+        if (exists) {
+          results.push({
+            city: cityDoc.city.name,
+            status: "already_exists",
+            date: nextDayFormatted,
+          });
+          continue;
+        }
+
+        // Récupérer les nouvelles prévisions
         const forecast = await axios.get(
           `https://api.openweathermap.org/data/2.5/forecast?lat=${cityDoc.city.coord.lat}&lon=${cityDoc.city.coord.lon}&units=metric&appid=${API_KEY}&cnt=40`
         );
 
-        const nextDayDate = moment().add(6, "days").startOf("day").toDate();
-
-        let nextDayForecast;
-        try {
-          nextDayForecast = getDayForecastDetails(
-            forecast.data.list,
-            nextDayDate
-          );
-        } catch (e) {
-          console.log(
-            `⚠️ Erreur dans getDayForecastDetails pour ${cityDoc.city.name} : ${e.message}`
-          );
-        }
+        const nextDayForecast = getDayForecastDetails(
+          forecast.data.list,
+          nextDayDate.toDate()
+        );
 
         if (nextDayForecast) {
           await DonneesCollectees.updateOne(
             { _id: cityDoc._id },
-            { $push: { forecast: nextDayForecast } }
+            {
+              $push: { forecast: nextDayForecast },
+              $set: {
+                lastUpdated: new Date(),
+                updatedAt: new Date(),
+              },
+            }
           );
 
-          console.log(`✅ Ville ajoutée avec succès : ${cityDoc.city.name}`);
+          // Affichage personnalisé avec icône pour les villes insérées
+          console.log(`✅ ${nextDayForecast.date} - ${cityDoc.city.name}`);
+
           results.push({
             city: cityDoc.city.name,
             status: "success",
-            forecast: nextDayForecast.date,
+            date: nextDayForecast.date,
+            dayName: nextDayForecast.dayName,
           });
         } else {
-          console.log(
-            `⚠️ Pas de prévision trouvée pour : ${cityDoc.city.name}`
-          );
           results.push({
             city: cityDoc.city.name,
-            status: "no_forecast_found",
+            status: "no_forecast_data",
+            date: nextDayFormatted,
           });
         }
 
-        // Pause pour éviter de trop solliciter l'API
+        // Pause entre les requêtes
         await new Promise((resolve) => setTimeout(resolve, 1500));
       } catch (error) {
-        console.log(
-          `❌ Erreur pour la ville ${cityDoc.city.name} : ${error.message}`
-        );
+        console.error(`❌ Erreur pour ${cityDoc.city.name}:`, error.message);
         results.push({
           city: cityDoc.city.name,
           status: "failed",
@@ -277,29 +320,65 @@ const addNextDayForecast = async (req, res) => {
       }
     }
 
-    // Filtrer les résultats valides avant envoi
-    const filteredResults = results.filter(
-      (item) => item !== undefined && item !== null
-    );
+    // Statistiques
+    const stats = {
+      total: results.length,
+      success: results.filter((r) => r.status === "success").length,
+      already_exists: results.filter((r) => r.status === "already_exists")
+        .length,
+      no_data: results.filter((r) => r.status === "no_forecast_data").length,
+      max_days: results.filter((r) => r.status === "max_days_reached").length,
+      failed: results.filter((r) => r.status === "failed").length,
+    };
 
-    res.status(200).json({ success: true, data: filteredResults });
-
-    // Affichage résumé des succès
-    console.log("\n📊 Résumé des ajouts réussis :");
-    filteredResults
-      .filter((item) => item.status === "success")
-      .forEach((item) =>
-        console.log(
-          `✅ ${item.city} => Prévision ajoutée pour ${item.forecast}`
-        )
+    // Vérification que 'res' est défini avant de l'utiliser
+    if (res && typeof res.json === "function") {
+      res.json({
+        success: true,
+        message: "Mise à jour des prévisions terminée",
+        data: results,
+        stats,
+      });
+    } else {
+      console.log(
+        "\n⚠️ Attention: 'res' n'est pas disponible pour envoyer la réponse HTTP"
       );
+      console.log("📊 Résultats:", {
+        success: true,
+        message: "Mise à jour des prévisions terminée",
+        data: results,
+        stats,
+      });
+    }
+
+    // Log des résultats
+    console.log("\n📊 Résumé de l'opération:");
+    console.log(`- Villes traitées: ${stats.total}`);
+    console.log(`- Prévisions ajoutées: ${stats.success}`);
+    console.log(`- Déjà à jour: ${stats.already_exists}`);
+    console.log(`- Données indisponibles: ${stats.no_data}`);
+    console.log(`- Limite 7 jours atteinte: ${stats.max_days}`);
+    console.log(`- Échecs: ${stats.failed}`);
   } catch (error) {
-    console.log(`❌ Erreur globale : ${error.message}`);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      message: "Erreur lors de l'ajout des prévisions",
-    });
+    console.error("❌ Erreur globale:", error);
+
+    // Vérification que 'res' est défini avant de l'utiliser
+    if (res && typeof res.status === "function") {
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        message: "Erreur lors de la mise à jour des prévisions",
+      });
+    } else {
+      console.error(
+        "⚠️ Attention: 'res' n'est pas disponible pour envoyer la réponse d'erreur"
+      );
+      console.error("Erreur détaillée:", {
+        success: false,
+        error: error.message,
+        message: "Erreur lors de la mise à jour des prévisions",
+      });
+    }
   }
 };
 

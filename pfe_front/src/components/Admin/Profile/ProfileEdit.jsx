@@ -3,7 +3,7 @@ import { Mail, User, Lock, Eye, EyeOff } from "lucide-react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-const ProfileEdit = () => {
+const ProfileEdit = ({ darkMode }) => {
   const [authUser, setAuthUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const navigate = useNavigate();
@@ -211,13 +211,25 @@ const ProfileEdit = () => {
         ))}
       </div>
 
-      <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
+      <div
+        className={`max-w-3xl mx-auto ${
+          darkMode ? "bg-gray-800" : "bg-white"
+        } rounded-xl shadow-lg overflow-hidden`}
+      >
+        <div
+          className={`flex border-b ${
+            darkMode ? "border-gray-700" : "border-gray-200"
+          }`}
+        >
           <button
             className={`flex-1 py-4 px-6 text-center font-medium text-lg ${
               activeTab === "info"
-                ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                ? darkMode
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-blue-600 border-b-2 border-blue-600"
+                : darkMode
+                ? "text-gray-400 hover:text-gray-300"
+                : "text-gray-500 hover:text-gray-700"
             }`}
             onClick={() => setActiveTab("info")}
           >
@@ -226,8 +238,12 @@ const ProfileEdit = () => {
           <button
             className={`flex-1 py-4 px-6 text-center font-medium text-lg ${
               activeTab === "password"
-                ? "text-blue-600 border-b-2 border-blue-600 dark:text-blue-400 dark:border-blue-400"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                ? darkMode
+                  ? "text-blue-400 border-b-2 border-blue-400"
+                  : "text-blue-600 border-b-2 border-blue-600"
+                : darkMode
+                ? "text-gray-400 hover:text-gray-300"
+                : "text-gray-500 hover:text-gray-700"
             }`}
             onClick={() => setActiveTab("password")}
           >
@@ -238,13 +254,21 @@ const ProfileEdit = () => {
         <div className="p-8">
           {activeTab === "info" ? (
             <>
-              <h2 className="text-2xl font-bold mb-8 text-gray-800 dark:text-white">
+              <h2
+                className={`text-2xl font-bold mb-8 ${
+                  darkMode ? "text-white" : "text-gray-800"
+                }`}
+              >
                 Informations personnelles
               </h2>
               <form onSubmit={handleSubmit} className="space-y-8">
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-md font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    <label
+                      className={`block text-md font-medium mb-3 ${
+                        darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
                       Nom complet
                     </label>
                     <div className="relative">
@@ -256,14 +280,22 @@ const ProfileEdit = () => {
                         name="username"
                         value={formData.username}
                         onChange={handleChange}
-                        className="pl-12 w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors"
+                        className={`pl-12 w-full rounded-lg border-2 ${
+                          darkMode
+                            ? "border-gray-600 bg-gray-700 text-white"
+                            : "border-gray-300 bg-white text-gray-900"
+                        } focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors`}
                         required
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-md font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    <label
+                      className={`block text-md font-medium mb-3 ${
+                        darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
                       Adresse email
                     </label>
                     <div className="relative">
@@ -276,10 +308,18 @@ const ProfileEdit = () => {
                         value={formData.email}
                         onChange={handleChange}
                         disabled
-                        className="pl-12 w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 cursor-not-allowed transition-colors"
+                        className={`pl-12 w-full rounded-lg border-2 ${
+                          darkMode
+                            ? "border-gray-600 bg-gray-700 text-white"
+                            : "border-gray-300 bg-gray-100 text-gray-900"
+                        } focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 cursor-not-allowed transition-colors`}
                       />
                     </div>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <p
+                      className={`mt-2 text-sm ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       L'adresse email ne peut pas être modifiée
                     </p>
                   </div>
@@ -304,13 +344,21 @@ const ProfileEdit = () => {
             </>
           ) : (
             <>
-              <h2 className="text-2xl font-bold mb-8 text-gray-800 dark:text-white">
+              <h2
+                className={`text-2xl font-bold mb-8 ${
+                  darkMode ? "text-white" : "text-gray-800"
+                }`}
+              >
                 Sécurité du compte
               </h2>
               <form onSubmit={handlePasswordSubmit} className="space-y-8">
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-md font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    <label
+                      className={`block text-md font-medium mb-3 ${
+                        darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
                       Mot de passe actuel
                     </label>
                     <div className="relative">
@@ -322,7 +370,11 @@ const ProfileEdit = () => {
                         name="oldPassword"
                         value={passwordData.oldPassword}
                         onChange={handlePasswordChange}
-                        className="pl-12 w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors"
+                        className={`pl-12 w-full rounded-lg border-2 ${
+                          darkMode
+                            ? "border-gray-600 bg-gray-700 text-white"
+                            : "border-gray-300 bg-white text-gray-900"
+                        } focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors`}
                         required
                       />
                       <button
@@ -332,12 +384,20 @@ const ProfileEdit = () => {
                       >
                         {showPassword.old ? (
                           <Eye
-                            className="text-gray-500 hover:text-gray-700"
+                            className={`${
+                              darkMode
+                                ? "text-gray-400 hover:text-gray-300"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
                             size={20}
                           />
                         ) : (
                           <EyeOff
-                            className="text-gray-500 hover:text-gray-700"
+                            className={`${
+                              darkMode
+                                ? "text-gray-400 hover:text-gray-300"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
                             size={20}
                           />
                         )}
@@ -346,7 +406,11 @@ const ProfileEdit = () => {
                   </div>
 
                   <div>
-                    <label className="block text-md font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    <label
+                      className={`block text-md font-medium mb-3 ${
+                        darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
                       Nouveau mot de passe
                     </label>
                     <div className="relative">
@@ -358,7 +422,11 @@ const ProfileEdit = () => {
                         name="newPassword"
                         value={passwordData.newPassword}
                         onChange={handlePasswordChange}
-                        className="pl-12 w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors"
+                        className={`pl-12 w-full rounded-lg border-2 ${
+                          darkMode
+                            ? "border-gray-600 bg-gray-700 text-white"
+                            : "border-gray-300 bg-white text-gray-900"
+                        } focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors`}
                         required
                         minLength="8"
                       />
@@ -369,24 +437,40 @@ const ProfileEdit = () => {
                       >
                         {showPassword.new ? (
                           <Eye
-                            className="text-gray-500 hover:text-gray-700"
+                            className={`${
+                              darkMode
+                                ? "text-gray-400 hover:text-gray-300"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
                             size={20}
                           />
                         ) : (
                           <EyeOff
-                            className="text-gray-500 hover:text-gray-700"
+                            className={`${
+                              darkMode
+                                ? "text-gray-400 hover:text-gray-300"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
                             size={20}
                           />
                         )}
                       </button>
                     </div>
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <p
+                      className={`mt-2 text-sm ${
+                        darkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       Le mot de passe doit contenir au moins 8 caractères
                     </p>
                   </div>
 
                   <div>
-                    <label className="block text-md font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    <label
+                      className={`block text-md font-medium mb-3 ${
+                        darkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
                       Confirmer le nouveau mot de passe
                     </label>
                     <div className="relative">
@@ -398,7 +482,11 @@ const ProfileEdit = () => {
                         name="confirmPassword"
                         value={passwordData.confirmPassword}
                         onChange={handlePasswordChange}
-                        className="pl-12 w-full rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors"
+                        className={`pl-12 w-full rounded-lg border-2 ${
+                          darkMode
+                            ? "border-gray-600 bg-gray-700 text-white"
+                            : "border-gray-300 bg-white text-gray-900"
+                        } focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md h-14 px-4 py-3 transition-colors`}
                         required
                         minLength="8"
                       />
@@ -409,12 +497,20 @@ const ProfileEdit = () => {
                       >
                         {showPassword.confirm ? (
                           <Eye
-                            className="text-gray-500 hover:text-gray-700"
+                            className={`${
+                              darkMode
+                                ? "text-gray-400 hover:text-gray-300"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
                             size={20}
                           />
                         ) : (
                           <EyeOff
-                            className="text-gray-500 hover:text-gray-700"
+                            className={`${
+                              darkMode
+                                ? "text-gray-400 hover:text-gray-300"
+                                : "text-gray-500 hover:text-gray-700"
+                            }`}
                             size={20}
                           />
                         )}

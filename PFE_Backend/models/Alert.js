@@ -5,7 +5,7 @@ const alertSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["temperature", "humidity", "wind", "pressure", "rain"],
+      enum: ["temperature", "humidity", "wind", "pressure", "rain", "uv"],
     },
     condition: {
       type: String,
