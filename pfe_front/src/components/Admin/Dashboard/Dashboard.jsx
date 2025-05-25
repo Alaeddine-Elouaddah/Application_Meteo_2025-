@@ -119,15 +119,14 @@ const Dashboard = ({ darkMode }) => {
   const [mapData, setMapData] = useState([]);
   const [mapLoading, setMapLoading] = useState(true);
 
-  // Fonction pour détecter la localisation
-  const detectLocation = () => {
+  // Fonction pour détecter la localisation temporairement (sans modifier la base)
+  const detectLocationTemp = () => {
     if (navigator.geolocation) {
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           try {
             const { latitude, longitude } = position.coords;
-            // Récupérer le nom de la ville à partir des coordonnées
             const response = await fetch(
               `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${API_KEY}`
             );
@@ -141,15 +140,13 @@ const Dashboard = ({ darkMode }) => {
               );
             }
           } catch (err) {
-            console.error("Error getting location name:", err);
             setLocation("El jadida");
             setGeolocationError(
-              "Erreur lors de la récupération du nom de la ville. Utilisation de El jadia par défaut."
+              "Erreur lors de la récupération du nom de la ville. Utilisation de El jadida par défaut."
             );
           }
         },
         (err) => {
-          console.error("Geolocation error:", err);
           setLocation("El jadida");
           setGeolocationError(
             "Impossible d'obtenir votre position. Utilisation de El jadida par défaut."
@@ -164,9 +161,34 @@ const Dashboard = ({ darkMode }) => {
     }
   };
 
+  const fetchUserCity = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    try {
+      const response = await fetch("http://localhost:8000/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (data.data && data.data.city && data.data.city.name) {
+        return `${data.data.city.name}, ${data.data.city.country}`;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   useEffect(() => {
-    // Détecter la localisation au chargement du composant
-    detectLocation();
+    const init = async () => {
+      const cityFromDb = await fetchUserCity();
+      if (cityFromDb) {
+        setLocation(cityFromDb);
+      } else {
+        detectLocationTemp();
+      }
+    };
+    init();
   }, []);
 
   useEffect(() => {
@@ -897,12 +919,12 @@ const Dashboard = ({ darkMode }) => {
         } shadow-md`}
       >
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center mb-4 md:mb-0">
+          <div className="flex items-center space-x-4 mb-4 md:mb-0">
             <h1 className={`text-2xl font-bold ${textClass}`}>
               Dashboard Météo
             </h1>
             {alerts.length > 0 && (
-              <div className="relative ml-4">
+              <div className="relative">
                 <button
                   onClick={toggleNotifications}
                   className={`p-2 rounded-full ${
@@ -969,9 +991,9 @@ const Dashboard = ({ darkMode }) => {
             )}
           </div>
 
-          <div className="flex flex-col md:flex-row gap-4 w-full justify-end">
-            <form onSubmit={handleSearch} className="flex w-full md:w-auto">
-              <div className="relative flex-grow md:flex-grow-0">
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center gap-2">
+              <div className="relative">
                 <input
                   type="text"
                   value={searchInput}
@@ -985,9 +1007,8 @@ const Dashboard = ({ darkMode }) => {
                     setTimeout(() => setShowSuggestions(false), 200)
                   }
                   placeholder="Rechercher une ville..."
-                  className={`w-full md:w-64 px-4 py-2 rounded-l-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`w-full md:w-64 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
-
                 {showSuggestions && searchSuggestions.length > 0 && (
                   <div
                     className={`absolute z-10 w-full mt-1 rounded-md shadow-lg ${
@@ -1017,46 +1038,54 @@ const Dashboard = ({ darkMode }) => {
               </div>
               <button
                 type="submit"
-                className={`px-4 py-2 rounded-r-lg ${buttonClass} text-white`}
+                className={`px-4 py-2 rounded-lg ${buttonClass} text-white`}
+                onClick={handleSearch}
               >
                 Rechercher
               </button>
-            </form>
+            </div>
 
-            <form
-              onSubmit={handleCoordinateSearch}
-              className="flex w-full md:w-auto"
-            >
-              <div className="relative flex-grow md:flex-grow-0 flex gap-2">
-                <input
-                  type="number"
-                  value={latitudeInput}
-                  onChange={(e) => setLatitudeInput(e.target.value)}
-                  placeholder="Latitude (ex: 30.42)"
-                  min="-90"
-                  max="90"
-                  step="0.000001"
-                  className={`w-32 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                />
-                <input
-                  type="number"
-                  value={longitudeInput}
-                  onChange={(e) => setLongitudeInput(e.target.value)}
-                  placeholder="Longitude (ex: -9.58)"
-                  min="-180"
-                  max="180"
-                  step="0.000001"
-                  className={`w-32 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                />
-                <button
-                  type="submit"
-                  className={`px-4 py-2 rounded-lg ${buttonClass} text-white`}
-                >
-                  <FiNavigation className="inline mr-1" />
-                  Rechercher par coordonnées
-                </button>
-              </div>
-            </form>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white flex items-center"
+                onClick={detectLocationTemp}
+              >
+                <FiNavigation className="mr-2" />
+                Détecter
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={latitudeInput}
+                onChange={(e) => setLatitudeInput(e.target.value)}
+                placeholder="Latitude"
+                min="-90"
+                max="90"
+                step="0.000001"
+                className={`w-24 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              <input
+                type="number"
+                value={longitudeInput}
+                onChange={(e) => setLongitudeInput(e.target.value)}
+                placeholder="Longitude"
+                min="-180"
+                max="180"
+                step="0.000001"
+                className={`w-24 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              <button
+                type="button"
+                className={`px-4 py-2 rounded-lg ${buttonClass} text-white`}
+                onClick={handleCoordinateSearch}
+              >
+                <FiNavigation className="inline mr-1" />
+                Coordonnées
+              </button>
+            </div>
           </div>
         </div>
       </header>

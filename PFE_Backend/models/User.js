@@ -6,10 +6,14 @@ const UserSchema = new mongoose.Schema(
     username: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    defaultCity: {
+    city: {
       name: { type: String },
-      lat: { type: Number },
-      lon: { type: Number },
+      country: { type: String },
+      coordinates: {
+        lat: { type: Number },
+        lon: { type: Number },
+      },
+      lastUpdated: { type: Date, default: Date.now },
     },
     role: {
       type: String,

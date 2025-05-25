@@ -166,7 +166,7 @@ exports.login = async (req, res) => {
     // Vérification si le compte est désactivé
     if (user.isActive === false) {
       return res.status(403).json({
-        error: " Compte désactivé — contactez l’administrateur.",
+        error: " Compte désactivé — contactez l'administrateur.",
         details:
           "Votre compte a été désactivé. Veuillez contacter l'administrateur.",
       });
@@ -423,6 +423,68 @@ exports.logout = async (req, res) => {
     res.status(200).json({ message: "Déconnexion réussie" });
   } catch (error) {
     console.error("Erreur lors de la déconnexion :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// Mettre à jour la ville de l'utilisateur
+exports.updateUserCity = async (req, res) => {
+  try {
+    const { cityData } = req.body;
+    const userId = req.user.id; // Récupéré du token JWT
+
+    console.log("Received city data:", cityData); // Debug log
+
+    if (!cityData || !cityData.name || !cityData.coordinates) {
+      return res.status(400).json({
+        error: "Données de ville invalides",
+        details: "Le nom de la ville et les coordonnées sont requis",
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    }
+
+    // Mise à jour de la ville
+    user.city = {
+      name: cityData.name,
+      country: cityData.country,
+      coordinates: {
+        lat: cityData.coordinates.lat,
+        lon: cityData.coordinates.lon,
+      },
+      lastUpdated: new Date(),
+    };
+
+    console.log("Updating user with city data:", user.city); // Debug log
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Ville mise à jour avec succès",
+      data: {
+        user: {
+          city: user.city,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de la ville:", error);
+    res.status(500).json({
+      error: "Erreur serveur",
+      details: error.message,
+    });
+  }
+};
+
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    res.status(200).json({ data: user });
+  } catch (error) {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
