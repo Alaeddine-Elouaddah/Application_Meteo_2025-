@@ -1,62 +1,37 @@
 const mongoose = require("mongoose");
 
-const alertSchema = new mongoose.Schema(
-  {
-    type: {
-      type: String,
-      required: true,
-      enum: ["temperature", "humidity", "wind", "pressure", "rain", "uv"],
-    },
-    condition: {
-      type: String,
-      required: true,
-      enum: [">", "<", "=", ">=", "<="],
-    },
-    value: {
-      type: Number,
-      required: true,
-    },
-    threshold: {
-      min: {
-        type: Number,
-        default: null,
-      },
-      max: {
-        type: Number,
-        default: null,
-      },
-    },
-
-    frequency: {
-      type: String,
-      required: true,
-      enum: ["daily", "weekly", "monthly"],
-    },
-
-    severity: {
-      type: String,
-      required: true,
-      enum: ["Information", "Avertissement", "Danger"],
-      default: "Information",
-    },
-
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    lastSent: {
-      type: Date,
-      default: null,
-    },
+const alertSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
   },
-  {
-    timestamps: true,
-  }
-);
+  type: {
+    type: String,
+    required: true,
+    enum: ["temperature", "humidity", "wind", "pressure", "rain", "uv"],
+  },
+  condition: {
+    type: String,
+    required: true,
+    enum: [">", "<", "=", ">=", "<="],
+  },
+  value: {
+    type: Number,
+    required: true,
+  },
+  threshold: {
+    min: Number,
+    max: Number,
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
 module.exports = mongoose.model("Alert", alertSchema);

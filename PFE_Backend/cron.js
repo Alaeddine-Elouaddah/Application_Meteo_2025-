@@ -16,10 +16,6 @@ cron.schedule("0 * * * *", async () => {
   await alertController.checkAndSendAlerts();
 });
 
-// Vérifier les alertes au démarrage du serveur
-console.log("Démarrage du service d'alertes météo...");
-alertController.checkAndSendAlerts();
-
 console.log(
   "🔄 Cron job configuré pour s'exécuter quotidiennement à 10h30 du matin"
 );

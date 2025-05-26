@@ -37,6 +37,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import MoroccoWeatherMap from "./MoroccoWeatherMap";
+import { jwtDecode } from "jwt-decode";
 
 ChartJS.register(
   CategoryScale,
@@ -191,11 +192,31 @@ const Dashboard = ({ darkMode }) => {
     init();
   }, []);
 
+  // Fonction pour déclencher une alerte
+  const triggerAlert = async (type, value) => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      await fetch("http://localhost:8000/api/alerts/trigger", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          type,
+          currentValue: value,
+        }),
+      });
+    } catch (err) {
+      console.error("Erreur lors du déclenchement de l'alerte :", err);
+    }
+  };
+
   useEffect(() => {
     const fetchWeatherData = async () => {
       try {
         if (!location) return;
-
         setLoading(true);
         setError(null);
 
@@ -300,6 +321,16 @@ const Dashboard = ({ darkMode }) => {
         // Process hourly forecast data
         const hourlyForecasts = processHourlyForecastData(forecastData.list);
         setHourlyData(hourlyForecasts);
+
+        // Déclenchement automatique des alertes après récupération des données météo
+        if (currentData && currentData.main) {
+          triggerAlert("temperature", currentData.main.temp);
+          triggerAlert("humidity", currentData.main.humidity);
+          triggerAlert("pressure", currentData.main.pressure);
+          if (currentData.wind && currentData.wind.speed !== undefined) {
+            triggerAlert("wind", Math.round(currentData.wind.speed * 3.6));
+          }
+        }
 
         setLoading(false);
       } catch (err) {

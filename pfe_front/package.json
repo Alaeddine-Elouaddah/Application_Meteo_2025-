@@ -19,6 +19,7 @@
     "chart.js": "^4.4.9",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.7.3",
+    "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.501.0",
     "react": "^19.1.0",

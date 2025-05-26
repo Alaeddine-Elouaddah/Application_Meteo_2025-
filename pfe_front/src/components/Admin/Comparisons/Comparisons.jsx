@@ -161,6 +161,24 @@ const Comparisons = ({ darkMode }) => {
     },
   });
 
+  // Récupérer la ville de l'utilisateur depuis la base de données
+  const fetchUserCity = async () => {
+    if (!token) return null;
+    try {
+      const response = await fetch("http://localhost:8000/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (data.data && data.data.city && data.data.city.name) {
+        return data.data.city.name;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   // Classes dynamiques pour le dark mode
   const bgClass = darkMode ? "bg-gray-900" : "bg-gray-50";
   const textClass = darkMode ? "text-white" : "text-gray-800";
@@ -235,14 +253,13 @@ const Comparisons = ({ darkMode }) => {
   };
 
   // Détecter la localisation de l'utilisateur
-  const detectLocation = () => {
+  const detectLocationTemp = () => {
     if (navigator.geolocation) {
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           try {
             const { latitude, longitude } = position.coords;
-            // Récupérer le nom de la ville à partir des coordonnées
             const response = await fetch(
               `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${API_KEY}`
             );
@@ -250,42 +267,41 @@ const Comparisons = ({ darkMode }) => {
             if (data && data.length > 0) {
               setCity(data[0].name);
               setSearchInput(`${data[0].name}, ${data[0].country}`);
-              // Fetch weather data for the detected city
               await fetchWeatherData(data[0].name);
             } else {
-              setCity("Agadir");
+              setCity("El jadida");
               setGeolocationError(
-                "Impossible de déterminer votre ville. Utilisation de Agadir par défaut."
+                "Impossible de déterminer votre ville. Utilisation de El jadida par défaut."
               );
-              await fetchWeatherData("Agadir");
+              await fetchWeatherData("El jadida");
             }
           } catch (err) {
             console.error("Erreur de récupération du nom de la ville:", err);
-            setCity("Agadir");
+            setCity("El jadida");
             setGeolocationError(
-              "Erreur lors de la récupération du nom de la ville. Utilisation de Agadir par défaut."
+              "Erreur lors de la récupération du nom de la ville. Utilisation de El jadida par défaut."
             );
-            await fetchWeatherData("Agadir");
+            await fetchWeatherData("El jadida");
           } finally {
             setLoading(false);
           }
         },
         (err) => {
           console.error("Erreur de géolocalisation:", err);
-          setCity("Agadir");
+          setCity("El jadida");
           setGeolocationError(
-            "Impossible d'obtenir votre position. Utilisation de Agadir par défaut."
+            "Impossible d'obtenir votre position. Utilisation de El jadida par défaut."
           );
-          fetchWeatherData("Agadir");
+          fetchWeatherData("El jadida");
           setLoading(false);
         }
       );
     } else {
-      setCity("Agadir");
+      setCity("El jadida");
       setGeolocationError(
-        "La géolocalisation n'est pas supportée par votre navigateur. Utilisation de Agadir par défaut."
+        "La géolocalisation n'est pas supportée par votre navigateur. Utilisation de El jadida par défaut."
       );
-      fetchWeatherData("Agadir");
+      fetchWeatherData("El jadida");
       setLoading(false);
     }
   };
@@ -373,7 +389,16 @@ const Comparisons = ({ darkMode }) => {
 
   // Initialiser les données au chargement du composant
   useEffect(() => {
-    detectLocation();
+    const init = async () => {
+      const cityFromDb = await fetchUserCity();
+      if (cityFromDb) {
+        setCity(cityFromDb);
+        await fetchWeatherData(cityFromDb);
+      } else {
+        detectLocationTemp();
+      }
+    };
+    init();
   }, []);
 
   if (loading) {
@@ -864,6 +889,14 @@ const Comparisons = ({ darkMode }) => {
                 className={`px-4 py-2 rounded-r-lg ${buttonClass} text-white`}
               >
                 {t.search}
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 ml-2 rounded-lg bg-green-600 hover:bg-green-700 text-white flex items-center"
+                onClick={detectLocationTemp}
+              >
+                <FiNavigation className="inline mr-1" />
+                Détecter
               </button>
             </form>
 

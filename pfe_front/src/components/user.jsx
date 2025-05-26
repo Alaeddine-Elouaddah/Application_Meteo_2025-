@@ -8,10 +8,12 @@ import {
   Link,
 } from "react-router-dom";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
 import Comparisons from "../components/Admin/Comparisons/Comparisons";
 import Dashboard from "../components/Admin/Dashboard/Dashboard";
 import ProfileEdit from "../components/Admin/Profile/ProfileEdit";
+import TriggeredAlerts from "./User/TriggeredAlerts";
 
 import {
   Thermometer,
@@ -87,6 +89,234 @@ class ErrorBoundary extends React.Component {
 
     return this.props.children;
   }
+}
+
+// Composant WeatherAlerts intégré
+function WeatherAlerts({ darkMode = false }) {
+  const [alerts, setAlerts] = useState([]);
+  const [currentTemp, setCurrentTemp] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [tempThreshold, setTempThreshold] = useState(null);
+
+  const API_KEY = "8f121dd9c661442f992124223252605";
+  const CITY = "Sidi Bennour";
+
+  // Fonction pour déclencher une alerte
+  const triggerAlert = async (type, value) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Token non trouvé");
+      return;
+    }
+
+    try {
+      // D'abord, récupérer les informations de l'utilisateur
+      const userResponse = await fetch("http://localhost:8000/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!userResponse.ok) {
+        console.error(
+          "Erreur lors de la récupération des informations utilisateur"
+        );
+        return;
+      }
+
+      const userData = await userResponse.json();
+      const userId = userData.data._id;
+
+      if (!userId) {
+        console.error("ID utilisateur non trouvé");
+        return;
+      }
+
+      // Ensuite, récupérer l'alerte active
+      const alertResponse = await fetch("http://localhost:8000/api/alerts", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!alertResponse.ok) {
+        console.error("Erreur lors de la récupération des alertes");
+        return;
+      }
+
+      const alertData = await alertResponse.json();
+      const activeAlert = alertData.data.alerts.find(
+        (alert) => alert.type === type && alert.isActive
+      );
+
+      if (!activeAlert) {
+        console.error("Aucune alerte active trouvée");
+        return;
+      }
+
+      // Enfin, déclencher l'alerte
+      const triggerResponse = await fetch(
+        "http://localhost:8000/api/alerts/trigger",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            userId,
+            alertId: activeAlert._id,
+            type,
+            currentValue: value,
+            city: CITY,
+          }),
+        }
+      );
+
+      if (!triggerResponse.ok) {
+        console.error("Erreur lors du déclenchement de l'alerte");
+        return;
+      }
+
+      console.log("Alerte déclenchée avec succès");
+    } catch (err) {
+      console.error("Erreur lors du déclenchement de l'alerte :", err);
+    }
+  };
+
+  // Récupérer le seuil de température
+  useEffect(() => {
+    const fetchTempThreshold = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("http://localhost:8000/api/alerts", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        if (data.status === "success") {
+          // Trouver le seuil de température actif
+          const tempAlert = data.data.alerts.find(
+            (alert) => alert.type === "temperature" && alert.isActive
+          );
+          if (tempAlert) {
+            console.log("Seuil de température trouvé:", tempAlert.value);
+            setTempThreshold(tempAlert.value);
+          }
+        }
+      } catch (err) {
+        console.error("Erreur lors de la récupération du seuil:", err);
+      }
+    };
+
+    fetchTempThreshold();
+  }, []);
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        const response = await fetch(
+          `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${CITY}`
+        );
+        const data = await response.json();
+
+        if (data.current && tempThreshold !== null) {
+          setCurrentTemp(data.current.temp_c);
+
+          // Vérifie si la température dépasse le seuil
+          if (data.current.temp_c > tempThreshold) {
+            // Déclencher l'alerte
+            await triggerAlert("temperature", data.current.temp_c);
+
+            setAlerts([
+              {
+                headline: "Alerte Température Élevée",
+                desc: `Attention : Température actuelle de ${data.current.temp_c}°C (supérieure à ${tempThreshold}°C)`,
+                effective: new Date().toISOString(),
+                expires: new Date(
+                  Date.now() + 6 * 60 * 60 * 1000
+                ).toISOString(),
+              },
+            ]);
+          } else {
+            setAlerts([]);
+          }
+        }
+      } catch (err) {
+        setError("Erreur de chargement des données météo");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWeather();
+  }, [tempThreshold]);
+
+  return (
+    <div
+      className={`min-h-screen p-6 ${darkMode ? "bg-gray-900" : "bg-gray-100"}`}
+    >
+      <div
+        className={`max-w-md mx-auto rounded-xl shadow-md overflow-hidden ${
+          darkMode ? "bg-gray-800" : "bg-white"
+        }`}
+      >
+        <div className="p-6">
+          <h1
+            className={`text-2xl font-bold mb-4 ${
+              darkMode ? "text-gray-100" : "text-gray-800"
+            }`}
+          >
+            Alertes Météo à {CITY}
+          </h1>
+
+          {loading ? (
+            <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
+              Chargement...
+            </p>
+          ) : error ? (
+            <p className="text-red-500">{error}</p>
+          ) : alerts.length === 0 ? (
+            <p className={darkMode ? "text-green-400" : "text-green-600"}>
+              Aucune alerte active (Température actuelle : {currentTemp}°C) ✅
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {alerts.map((alert, index) => (
+                <div
+                  key={index}
+                  className={`p-4 border-l-4 rounded ${
+                    darkMode
+                      ? "bg-orange-900/30 border-orange-400"
+                      : "bg-orange-50 border-orange-500"
+                  }`}
+                >
+                  <h2
+                    className={`font-semibold ${
+                      darkMode ? "text-orange-300" : "text-orange-700"
+                    }`}
+                  >
+                    {alert.headline}
+                  </h2>
+                  <p
+                    className={`text-sm mt-1 ${
+                      darkMode ? "text-gray-300" : "text-gray-600"
+                    }`}
+                  >
+                    {alert.desc}
+                  </p>
+                  <p
+                    className={`text-xs mt-2 ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    À partir de :{" "}
+                    {new Date(alert.effective).toLocaleTimeString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Composant DashboardCard
@@ -173,6 +403,56 @@ const InteractiveMap = ({ location, darkMode }) => {
   );
 };
 
+// Composant UserAlerts
+const UserAlerts = () => {
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:8000/api/alerts/", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setAlerts(data.data.alerts || []);
+      setLoading(false);
+    };
+    fetchAlerts();
+  }, []);
+
+  if (loading) return <div>Chargement...</div>;
+
+  return (
+    <div className="max-w-2xl mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Mes alertes météo</h2>
+      {alerts.length === 0 ? (
+        <div>Aucune alerte pour le moment.</div>
+      ) : (
+        <ul className="space-y-4">
+          {alerts.map((alert, idx) => (
+            <li
+              key={idx}
+              className="p-4 rounded bg-yellow-100 border-l-4 border-yellow-500"
+            >
+              <div className="font-semibold">
+                {alert.type} : {alert.description}
+              </div>
+              <div>Valeur : {alert.value}</div>
+              <div>
+                Ville : {alert.city.name}, {alert.city.country}
+              </div>
+              <div className="text-xs text-gray-500">
+                Déclenchée le {new Date(alert.triggeredAt).toLocaleString()}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
 // Composant principal Admin
 const User = () => {
   const [weatherData, setWeatherData] = useState(null);
@@ -193,6 +473,85 @@ const User = () => {
   const OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5";
 
   const navigate = useNavigate();
+
+  // Fonction pour déclencher une alerte
+  const triggerAlert = async (type, value) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("Token non trouvé");
+      return;
+    }
+
+    try {
+      // D'abord, récupérer les informations de l'utilisateur
+      const userResponse = await fetch("http://localhost:8000/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!userResponse.ok) {
+        console.error(
+          "Erreur lors de la récupération des informations utilisateur"
+        );
+        return;
+      }
+
+      const userData = await userResponse.json();
+      const userId = userData.data._id;
+
+      if (!userId) {
+        console.error("ID utilisateur non trouvé");
+        return;
+      }
+
+      // Ensuite, récupérer l'alerte active
+      const alertResponse = await fetch("http://localhost:8000/api/alerts", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!alertResponse.ok) {
+        console.error("Erreur lors de la récupération des alertes");
+        return;
+      }
+
+      const alertData = await alertResponse.json();
+      const activeAlert = alertData.data.alerts.find(
+        (alert) => alert.type === type && alert.isActive
+      );
+
+      if (!activeAlert) {
+        console.error("Aucune alerte active trouvée");
+        return;
+      }
+
+      // Enfin, déclencher l'alerte
+      const triggerResponse = await fetch(
+        "http://localhost:8000/api/alerts/trigger",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            userId,
+            alertId: activeAlert._id,
+            type,
+            currentValue: value,
+            city: CITY,
+          }),
+        }
+      );
+
+      if (!triggerResponse.ok) {
+        console.error("Erreur lors du déclenchement de l'alerte");
+        return;
+      }
+
+      console.log("Alerte déclenchée avec succès");
+    } catch (err) {
+      console.error("Erreur lors du déclenchement de l'alerte :", err);
+    }
+  };
 
   const fetchWeatherData = async () => {
     try {
@@ -248,6 +607,16 @@ const User = () => {
 
       if (userLocation && currentData.name) {
         setCity(currentData.name);
+      }
+
+      // Déclenchement automatique des alertes après récupération des données météo
+      if (currentData && currentData.main) {
+        triggerAlert("temperature", currentData.main.temp);
+        triggerAlert("humidity", currentData.main.humidity);
+        triggerAlert("pressure", currentData.main.pressure);
+        if (currentData.wind && currentData.wind.speed !== undefined) {
+          triggerAlert("wind", Math.round(currentData.wind.speed * 3.6));
+        }
       }
     } catch (err) {
       console.error("Erreur fetchWeatherData:", err);
@@ -824,6 +1193,11 @@ const User = () => {
                 path="/profile"
                 element={<ProfileEdit darkMode={darkMode} />}
               />
+              <Route
+                path="/alerts"
+                element={<WeatherAlerts darkMode={darkMode} />}
+              />
+              <Route path="/received-alerts" element={<TriggeredAlerts />} />
             </Routes>
           )}
         </main>
