@@ -447,7 +447,7 @@ exports.updateUserCity = async (req, res) => {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
 
-    // Mise à jour de la ville
+    // Mise à jour de la ville avec la nouvelle structure
     user.city = {
       name: cityData.name,
       country: cityData.country,

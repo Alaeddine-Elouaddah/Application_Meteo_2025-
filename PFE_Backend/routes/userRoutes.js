@@ -22,6 +22,14 @@ router.get("/users-list", userController.getUsers);
 
 // Route pour gérer le statut actif
 router.patch("/:id/active-status", userController.updateUserActiveStatus);
+
+// Route pour mettre à jour la ville d'un utilisateur
+router.post(
+  "/update-city",
+  authController.protect,
+  userController.updateUserCity
+);
+
 // Route corrigée pour toggle-status
 router.patch(
   "/:id/toggle-status",
@@ -29,6 +37,7 @@ router.patch(
   authController.restrictTo("admin"),
   userController.toggleUserStatus
 );
+
 // Routes pour un utilisateur spécifique
 router
   .route("/:id")

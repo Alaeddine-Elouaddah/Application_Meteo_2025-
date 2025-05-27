@@ -260,3 +260,44 @@ exports.toggleUserStatus = async (req, res) => {
     });
   }
 };
+
+// Mettre à jour la ville d'un utilisateur
+exports.updateUserCity = catchAsync(async (req, res, next) => {
+  const { city, coordinates } = req.body;
+
+  if (!city || !coordinates) {
+    return next(
+      new AppError("Veuillez fournir la ville et les coordonnées", 400)
+    );
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    {
+      city: {
+        name: city.name,
+        country: city.country,
+      },
+      coordinates: {
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select("-password -__v -verificationCode -resetCode");
+
+  if (!user) {
+    return next(new AppError("Utilisateur non trouvé", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      user,
+    },
+    message: "Ville mise à jour avec succès",
+  });
+});

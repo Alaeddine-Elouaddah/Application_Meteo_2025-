@@ -4,11 +4,17 @@ const alertController = require("../controllers/alertController");
 const { protect } = require("../middlewares/authMiddleware");
 const { check } = require("express-validator");
 
-// Middleware d'authentification pour toutes les routes
-router.use(protect);
+// Middleware d'authentification pour toutes les routes SAUF celles exclues explicitement
+router.use((req, res, next) => {
+  if (req.path === "/check/now") {
+    return next(); // Skip l'authentification pour cette route
+  }
+  protect(req, res, next); // Applique l'authentification pour les autres routes
+});
+
+// Routes protégées (sauf /check/now)
 router.get("/triggered", alertController.getTriggeredAlerts);
 
-// Routes de base pour les alertes
 router
   .route("/")
   .get(alertController.getUserAlerts)
@@ -23,7 +29,6 @@ router
     alertController.createAlert
   );
 
-// Routes pour une alerte spécifique
 router
   .route("/:id")
   .get(alertController.getAlertById)
@@ -37,9 +42,7 @@ router
   )
   .delete(alertController.deleteAlert);
 
-// Route spéciale pour déclencher manuellement la vérification
+// Route **sans authentification** pour déclencher manuellement la vérification
 router.post("/check/now", alertController.manualAlertCheck);
-
-// Route pour obtenir les alertes déclenchées
 
 module.exports = router;

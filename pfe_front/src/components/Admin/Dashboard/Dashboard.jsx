@@ -107,8 +107,6 @@ const Dashboard = ({ darkMode }) => {
   const [uvIndex, setUvIndex] = useState(null);
   const [pollenData, setPollenData] = useState(null);
   const [recentLocations, setRecentLocations] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [alerts, setAlerts] = useState([]);
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [geolocationError, setGeolocationError] = useState(null);
@@ -120,8 +118,8 @@ const Dashboard = ({ darkMode }) => {
   const [mapData, setMapData] = useState([]);
   const [mapLoading, setMapLoading] = useState(true);
 
-  // Fonction pour détecter la localisation temporairement (sans modifier la base)
-  const detectLocationTemp = () => {
+  // Fonction pour détecter la localisation et l'enregistrer dans la base de données
+  const detectLocationTemp = async () => {
     if (navigator.geolocation) {
       setLoading(true);
       navigator.geolocation.getCurrentPosition(
@@ -133,7 +131,43 @@ const Dashboard = ({ darkMode }) => {
             );
             const data = await response.json();
             if (data && data.length > 0) {
-              setLocation(`${data[0].name}, ${data[0].country}`);
+              const cityName = `${data[0].name}, ${data[0].country}`;
+              setLocation(cityName);
+
+              // Vérifier si l'utilisateur a déjà une ville dans la base de données
+              const token = localStorage.getItem("token");
+              const userResponse = await fetch(
+                "http://localhost:8000/api/auth/me",
+                {
+                  headers: { Authorization: `Bearer ${token}` },
+                }
+              );
+              const userData = await userResponse.json();
+
+              // Si l'utilisateur n'a pas de ville ou si la ville est différente
+              if (
+                !userData.data.city ||
+                userData.data.city.name !== data[0].name
+              ) {
+                // Mettre à jour la ville dans la base de données
+                const cityData = {
+                  name: data[0].name,
+                  country: data[0].country,
+                  coordinates: {
+                    lat: latitude,
+                    lon: longitude,
+                  },
+                };
+
+                await fetch("http://localhost:8000/api/auth/update-city", {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ cityData }),
+                });
+              }
             } else {
               setLocation("El jadida");
               setGeolocationError(
@@ -172,7 +206,11 @@ const Dashboard = ({ darkMode }) => {
       if (!response.ok) return null;
       const data = await response.json();
       if (data.data && data.data.city && data.data.city.name) {
-        return `${data.data.city.name}, ${data.data.city.country}`;
+        return {
+          name: data.data.city.name,
+          country: data.data.city.country,
+          coordinates: data.data.city.coordinates,
+        };
       }
       return null;
     } catch {
@@ -184,34 +222,50 @@ const Dashboard = ({ darkMode }) => {
     const init = async () => {
       const cityFromDb = await fetchUserCity();
       if (cityFromDb) {
-        setLocation(cityFromDb);
+        setLocation(`${cityFromDb.name}, ${cityFromDb.country}`);
+        // Si nous avons des coordonnées, nous pouvons les utiliser directement
+        if (cityFromDb.coordinates) {
+          const { lat, lon } = cityFromDb.coordinates;
+          const response = await fetch(
+            `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}&lang=fr`
+          );
+          const data = await response.json();
+          if (data.cod === 200) {
+            setWeatherData({
+              temperature: Math.round(data.main.temp),
+              feelsLike: Math.round(data.main.feels_like),
+              humidity: data.main.humidity,
+              windSpeed: Math.round(data.wind.speed * 3.6),
+              windGust: Math.round(
+                (data.wind.gust || data.wind.speed * 1.5) * 3.6
+              ),
+              windDirection: getWindDirection(data.wind.deg),
+              windDeg: data.wind.deg,
+              condition: data.weather[0].main.toLowerCase(),
+              description: data.weather[0].description,
+              pressure: data.main.pressure,
+              visibility: data.visibility / 1000,
+              sunrise: new Date(data.sys.sunrise * 1000),
+              sunset: new Date(data.sys.sunset * 1000),
+              icon: data.weather[0].icon,
+              rain: data.rain ? data.rain["1h"] || 0 : 0,
+              snow: data.snow ? data.snow["1h"] || 0 : 0,
+              clouds: data.clouds.all,
+              city: data.name,
+              country: data.sys.country,
+              coord: data.coord,
+              dewPoint: Math.round(
+                data.main.temp - (100 - data.main.humidity) / 5
+              ),
+            });
+          }
+        }
       } else {
         detectLocationTemp();
       }
     };
     init();
   }, []);
-
-  // Fonction pour déclencher une alerte
-  const triggerAlert = async (type, value) => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
-    try {
-      await fetch("http://localhost:8000/api/alerts/trigger", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          type,
-          currentValue: value,
-        }),
-      });
-    } catch (err) {
-      console.error("Erreur lors du déclenchement de l'alerte :", err);
-    }
-  };
 
   useEffect(() => {
     const fetchWeatherData = async () => {
@@ -247,19 +301,6 @@ const Dashboard = ({ darkMode }) => {
           `https://api.openweathermap.org/data/2.5/uvi?lat=${currentData.coord.lat}&lon=${currentData.coord.lon}&appid=${API_KEY}`
         );
         const uvData = await uvResponse.json();
-
-        // Weather alerts (if any)
-        try {
-          const alertResponse = await fetch(
-            `https://api.openweathermap.org/data/2.5/onecall?lat=${currentData.coord.lat}&lon=${currentData.coord.lon}&exclude=minutely,hourly,daily&appid=${API_KEY}`
-          );
-          const alertData = await alertResponse.json();
-          if (alertData.alerts) {
-            setAlerts(alertData.alerts);
-          }
-        } catch (alertError) {
-          console.error("Error fetching alerts:", alertError);
-        }
 
         // Mock pollen data
         const mockPollenData = {
@@ -321,16 +362,6 @@ const Dashboard = ({ darkMode }) => {
         // Process hourly forecast data
         const hourlyForecasts = processHourlyForecastData(forecastData.list);
         setHourlyData(hourlyForecasts);
-
-        // Déclenchement automatique des alertes après récupération des données météo
-        if (currentData && currentData.main) {
-          triggerAlert("temperature", currentData.main.temp);
-          triggerAlert("humidity", currentData.main.humidity);
-          triggerAlert("pressure", currentData.main.pressure);
-          if (currentData.wind && currentData.wind.speed !== undefined) {
-            triggerAlert("wind", Math.round(currentData.wind.speed * 3.6));
-          }
-        }
 
         setLoading(false);
       } catch (err) {
@@ -584,10 +615,6 @@ const Dashboard = ({ darkMode }) => {
 
   const selectRecentLocation = (loc) => {
     setLocation(loc);
-  };
-
-  const toggleNotifications = () => {
-    setShowNotifications(!showNotifications);
   };
 
   const tempChartData = {
@@ -954,72 +981,6 @@ const Dashboard = ({ darkMode }) => {
             <h1 className={`text-2xl font-bold ${textClass}`}>
               Dashboard Météo
             </h1>
-            {alerts.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={toggleNotifications}
-                  className={`p-2 rounded-full ${
-                    darkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
-                  } relative`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                    />
-                  </svg>
-                  <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
-                    {alerts.length}
-                  </span>
-                </button>
-                {showNotifications && (
-                  <div
-                    className={`absolute right-0 mt-2 w-72 rounded-md shadow-lg ${
-                      darkMode ? "bg-gray-700" : "bg-white"
-                    } ring-1 ring-black ring-opacity-5 z-20`}
-                  >
-                    <div
-                      className={`p-4 ${
-                        darkMode ? "bg-gray-700" : "bg-white"
-                      } rounded-md`}
-                    >
-                      <h3 className={`text-lg font-medium ${textClass} mb-2`}>
-                        Alertes Météo
-                      </h3>
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {alerts.map((alert, index) => (
-                          <div
-                            key={index}
-                            className={`p-3 rounded ${
-                              darkMode ? "bg-gray-600" : "bg-yellow-50"
-                            }`}
-                          >
-                            <h4 className={`font-bold ${textClass}`}>
-                              {alert.event}
-                            </h4>
-                            <p className={`text-sm ${secondaryTextClass}`}>
-                              {alert.description}
-                            </p>
-                            <p className="text-xs mt-1 text-gray-500">
-                              Du {new Date(alert.start * 1000).toLocaleString()}{" "}
-                              au {new Date(alert.end * 1000).toLocaleString()}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="flex flex-wrap gap-2 items-center">

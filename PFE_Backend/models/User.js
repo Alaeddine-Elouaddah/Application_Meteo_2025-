@@ -13,7 +13,7 @@ const UserSchema = new mongoose.Schema(
         lat: { type: Number },
         lon: { type: Number },
       },
-      lastUpdated: { type: Date, default: Date.now },
+      lastUpdated: { type: Date },
     },
     role: {
       type: String,
