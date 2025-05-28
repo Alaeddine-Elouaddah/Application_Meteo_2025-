@@ -2,6 +2,8 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../utils/sendEmail");
 const bcrypt = require("bcryptjs");
+const fs = require("fs");
+const path = require("path");
 
 // 🔐 Créer un compte + envoyer un code de vérification
 exports.register = async (req, res) => {
@@ -44,8 +46,8 @@ exports.register = async (req, res) => {
       username,
       email: email.toLowerCase(), // Normalise l'email en minuscules
       password: hashedPassword,
-
       verificationCode,
+      verificationCodeExpires: Date.now() + 3600000, // Expire dans 1 heure
       isVerified: false,
     });
 
@@ -53,11 +55,26 @@ exports.register = async (req, res) => {
     await user.save();
 
     // Envoi de l'email de vérification
-    await sendEmail(
-      email,
-      "Vérification de votre compte",
-      `Votre code de vérification est : ${verificationCode}`
-    );
+    const imageBase64 = fs
+      .readFileSync(path.join(__dirname, "../Alert_base64.txt"), "utf8")
+      .replace(/(\r\n|\n|\r)/gm, "");
+    const htmlWelcome = `
+      <div style="font-family: Arial, sans-serif; background: #f6f8fa; padding: 30px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 2px 8px #e0e0e0;">
+        <div style="text-align: center;">
+          <img src="https://cdn-icons-png.flaticon.com/512/3767/3767036.png" alt="Bienvenue" style="width: 120px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 2px 8px #d1e7dd;" />
+          <h2 style="color: #2d7a2d; margin-bottom: 10px;">Bienvenue chez <span style='color:#007bff'>Notre Plateforme</span> !</h2>
+          <p style="font-size: 1.1em; color: #333;">Bonjour <b>${username}</b>,<br>Merci de vous être inscrit !</p>
+          <div style="background: #fff; border-radius: 8px; padding: 18px 10px; margin: 18px 0; border: 1px solid #e0e0e0;">
+            <span style="font-size: 1.1em; color: #555;">Votre code de vérification :</span><br>
+            <span style="font-size: 2em; color: #007bff; font-weight: bold; letter-spacing: 2px;">${verificationCode}</span>
+            <div style="margin-top: 10px; color: #b94a48; font-size: 0.95em;">Ce code expirera dans <b>1 heure</b>.</div>
+          </div>
+          <p style="color: #555;">Nous sommes ravis de vous compter parmi nous.<br>Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet email.</p>
+          <p style="margin-top: 30px; color: #888; font-size: 0.9em;">L'équipe de <b>Notre Plateforme</b> vous souhaite la bienvenue !</p>
+        </div>
+      </div>
+    `;
+    await sendEmail(email, "Vérification de votre compte", htmlWelcome);
 
     // Génération du token (comme dans le deuxième code)
     const token = jwt.sign(
@@ -99,12 +116,16 @@ exports.verifyCode = async (req, res) => {
       return res.status(404).json({ error: "Utilisateur non trouvé." });
     }
 
-    if (user.verificationCode !== code) {
-      return res.status(400).json({ error: "Code incorrect." });
+    if (
+      user.verificationCode !== code ||
+      user.verificationCodeExpires < Date.now()
+    ) {
+      return res.status(400).json({ error: "Code incorrect ou expiré." });
     }
 
     user.isVerified = true;
     user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
     await user.save();
 
     // Générer un nouveau token après vérification
@@ -189,11 +210,12 @@ exports.login = async (req, res) => {
         user.verificationCode = Math.floor(
           100000 + Math.random() * 900000
         ).toString();
+        user.verificationCodeExpires = Date.now() + 3600000; // Expire dans 1 heure
         await user.save();
         await sendEmail(
           user.email,
           "Vérification de votre compte",
-          `Votre nouveau code de vérification est : ${user.verificationCode}`
+          `Votre nouveau code de vérification est : ${user.verificationCode}\nCe code expirera dans 1 heure.`
         );
       }
 
@@ -257,11 +279,24 @@ exports.forgotPassword = async (req, res) => {
 
     await user.save();
 
-    await sendEmail(
-      email,
-      "Réinitialisation de mot de passe",
-      `Votre code de réinitialisation est : ${resetCode} (valide 1 heure)`
-    );
+    const imageUrl = "https://cdn-icons-png.flaticon.com/512/3767/3767036.png";
+    const htmlReset = `
+      <div style="font-family: Arial, sans-serif; background: #f6f8fa; padding: 30px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 2px 8px #e0e0e0;">
+        <div style="text-align: center;">
+          <img src="${imageUrl}" alt="Réinitialisation" style="width: 120px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 2px 8px #d1e7dd;" />
+          <h2 style="color: #2d7a2d; margin-bottom: 10px;">Réinitialisation du mot de passe</h2>
+          <p style="font-size: 1.1em; color: #333;">Bonjour <b>${user.username}</b>,<br>Vous avez demandé à réinitialiser votre mot de passe.</p>
+          <div style="background: #fff; border-radius: 8px; padding: 18px 10px; margin: 18px 0; border: 1px solid #e0e0e0;">
+            <span style="font-size: 1.1em; color: #555;">Votre code de réinitialisation :</span><br>
+            <span style="font-size: 2em; color: #007bff; font-weight: bold; letter-spacing: 2px;">${resetCode}</span>
+            <div style="margin-top: 10px; color: #b94a48; font-size: 0.95em;">Ce code expirera dans <b>1 heure</b>.</div>
+          </div>
+          <p style="color: #555;">Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email.<br>Votre mot de passe actuel reste inchangé.</p>
+          <p style="margin-top: 30px; color: #888; font-size: 0.9em;">L'équipe de <b>Notre Plateforme</b> reste à votre écoute.</p>
+        </div>
+      </div>
+    `;
+    await sendEmail(email, "Réinitialisation de mot de passe", htmlReset);
 
     res.json({
       message: "Code envoyé avec succès.",

@@ -11,7 +11,7 @@ cron.schedule("56 14 * * *", () => {
 });
 
 // Vérifier les alertes toutes les heures
-cron.schedule("01 11 * * *", async () => {
+cron.schedule("04 15 * * *", async () => {
   console.log("Vérification des alertes météo...");
   await alertController.checkAndSendAlerts();
 });

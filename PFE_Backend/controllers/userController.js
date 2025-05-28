@@ -240,18 +240,52 @@ exports.toggleUserStatus = async (req, res) => {
       });
     }
 
-    // Envoi de l'email
+    // Email templates for activation and deactivation
+    const activationEmail = `
+      <div style="font-family: Arial, sans-serif; background: #f6f8fa; padding: 30px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 2px 8px #e0e0e0;">
+        <div style="text-align: center;">
+          <img src="https://img.freepik.com/vecteurs-premium/icon-marque-verification-vert_172976-2945.jpg" alt="Compte Activé" style="width: 120px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 2px 8px #d1e7dd;" />
+          <h2 style="color: #2d7a2d; margin-bottom: 10px;">Bienvenue de retour !</h2>
+          <p style="font-size: 1.1em; color: #333;">Bonjour <b>${user.username}</b>,<br>Votre compte a été activé avec succès.</p>
+          <div style="background: #fff; border-radius: 8px; padding: 18px 10px; margin: 18px 0; border: 1px solid #e0e0e0;">
+            <p style="color: #555; margin: 0;">Vous pouvez maintenant vous connecter et accéder à toutes les fonctionnalités de notre plateforme.</p>
+          </div>
+          <p style="color: #555;">Nous sommes ravis de vous revoir !<br>N'hésitez pas à nous contacter si vous avez des questions.</p>
+          <p style="margin-top: 30px; color: #888; font-size: 0.9em;">L'équipe de <b>Notre Plateforme</b> vous souhaite la bienvenue !</p>
+        </div>
+      </div>
+    `;
+
+    const deactivationEmail = `
+      <div style="font-family: Arial, sans-serif; background: #f6f8fa; padding: 30px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 2px 8px #e0e0e0;">
+        <div style="text-align: center;">
+          <img src="https://cdn-icons-png.flaticon.com/512/1828/1828843.png" alt="Compte Désactivé" style="width: 120px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 2px 8px #d1e7dd;" />
+          <h2 style="color: #dc3545; margin-bottom: 10px;">Compte Désactivé</h2>
+          <p style="font-size: 1.1em; color: #333;">Bonjour <b>${user.username}</b>,<br>Votre compte a été désactivé.</p>
+          <div style="background: #fff; border-radius: 8px; padding: 18px 10px; margin: 18px 0; border: 1px solid #e0e0e0;">
+            <p style="color: #555; margin: 0;">Pour réactiver votre compte, veuillez contacter l'administrateur.</p>
+          </div>
+          <p style="color: #555;">Si vous pensez qu'il s'agit d'une erreur,<br>n'hésitez pas à nous contacter pour plus d'informations.</p>
+          <p style="margin-top: 30px; color: #888; font-size: 0.9em;">L'équipe de <b>Notre Plateforme</b> reste à votre écoute.</p>
+        </div>
+      </div>
+    `;
+
+    // Send appropriate email based on status
     await sendEmail(
       user.email,
-      `Statut compte ${user.isActive ? "activé" : "désactivé"}`,
-      `Votre compte a été ${
-        user.isActive ? "activé" : "désactivé"
-      } avec succès.`
+      user.isActive
+        ? "Votre compte a été activé"
+        : "Votre compte a été désactivé",
+      user.isActive ? activationEmail : deactivationEmail
     );
 
     res.status(200).json({
       status: "success",
       data: { user },
+      message: user.isActive
+        ? "Compte activé avec succès"
+        : "Compte désactivé avec succès",
     });
   } catch (err) {
     res.status(400).json({

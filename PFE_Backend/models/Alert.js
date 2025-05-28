@@ -34,12 +34,6 @@ const alertSchema = new mongoose.Schema({
     enum: ["Danger", "Warning", "Information"],
     default: "Information",
   },
-  frequency: {
-    type: String,
-    required: true,
-    enum: ["hourly", "daily", "weekly", "monthly"],
-    default: "daily",
-  },
   isActive: {
     type: Boolean,
     default: true,

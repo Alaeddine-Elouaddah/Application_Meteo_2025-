@@ -468,15 +468,18 @@ const User = () => {
         return (
           <div
             key={alert._id}
-            className={`rounded-xl shadow-md overflow-hidden border-l-4 ${
+            className={`rounded-xl shadow-lg overflow-hidden border-l-4 transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl ${
               alert.severity === "Danger"
-                ? "border-red-500"
+                ? "border-red-500 hover:shadow-red-100"
                 : alert.severity === "Warning"
-                ? "border-orange-500"
-                : "border-blue-500"
-            } ${darkMode ? "bg-gray-800" : "bg-white"}`}
+                ? "border-orange-500 hover:shadow-orange-100"
+                : "border-blue-500 hover:shadow-blue-100"
+            } ${darkMode ? "bg-gray-800" : "bg-white"} relative group`}
           >
-            <div className="p-5">
+            {/* Effet de fond au survol */}
+            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-white dark:to-gray-700 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+
+            <div className="p-5 relative z-10">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-3">
                   {icon}
@@ -548,13 +551,6 @@ const User = () => {
 
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Fréquence
-                  </p>
-                  <p className="font-medium capitalize">{alert.frequency}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
                     Localisation
                   </p>
                   <p className="font-medium">{alert.city}</p>
@@ -590,7 +586,7 @@ const User = () => {
                   {!alert.isRead && (
                     <button
                       onClick={() => handleMarkAsRead(alert._id)}
-                      className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full transition-colors"
+                      className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full transition-colors transform group-hover:scale-110"
                     >
                       Marquer comme lu
                     </button>

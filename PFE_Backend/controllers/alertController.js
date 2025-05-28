@@ -182,9 +182,44 @@ exports.checkAndSendAlerts = async () => {
 
           if (response.data.cod !== 200) continue;
 
-          // Vérification condition alerte
-          const currentValue = getWeatherValue(alert.type, response.data);
-          if (!checkAlertCondition(alert, currentValue)) continue;
+          // Récupération de la valeur actuelle selon le type
+          let currentValue;
+          if (alert.type === "uv") {
+            const uvUrl = `https://api.openweathermap.org/data/2.5/uvi?lat=${user.city.coordinates.lat}&lon=${user.city.coordinates.lon}&appid=${API_KEY}`;
+            const uvResponse = await axios.get(uvUrl);
+            currentValue = uvResponse.data.value;
+            console.log(
+              "[ALERTE UV] user:",
+              user._id,
+              "ville:",
+              user.city.name || user.city,
+              "valeur UV:",
+              currentValue
+            );
+          } else {
+            currentValue = getWeatherValue(alert.type, response.data);
+            console.log(
+              `[ALERTE ${alert.type.toUpperCase()}] user:`,
+              user._id,
+              "ville:",
+              user.city.name || user.city,
+              "valeur:",
+              currentValue
+            );
+          }
+
+          // Log de la condition
+          console.log(
+            "Condition:",
+            alert.condition,
+            "Seuil:",
+            alert.value,
+            "Valeur actuelle:",
+            currentValue
+          );
+          const declenche = checkAlertCondition(alert, currentValue);
+          console.log("Déclenchement:", declenche);
+          if (!declenche) continue;
 
           // Envoi email
           await sendEmail(

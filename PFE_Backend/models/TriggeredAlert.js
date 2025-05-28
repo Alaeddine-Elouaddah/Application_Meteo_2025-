@@ -37,11 +37,6 @@ const triggeredAlertSchema = new mongoose.Schema({
     required: false,
     enum: ["Danger", "Warning", "Information"],
   },
-  frequency: {
-    type: String,
-    required: false,
-    enum: ["hourly", "daily", "weekly", "monthly"],
-  },
   alertValue: {
     type: Number,
     required: false,

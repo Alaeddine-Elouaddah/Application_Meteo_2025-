@@ -45,7 +45,6 @@ const Alert = ({ darkMode }) => {
     condition: ">",
     value: "",
     description: "",
-    frequency: "daily",
     severity: "Information",
     isActive: true,
   });
@@ -60,7 +59,6 @@ const Alert = ({ darkMode }) => {
     type: "Type",
     condition: "Condition",
     value: "Seuil",
-    frequency: "Fréquence",
     active: "Active",
     inactive: "Inactive",
     actions: "Actions",
@@ -77,9 +75,6 @@ const Alert = ({ darkMode }) => {
     above: "Supérieur à",
     below: "Inférieur à",
     equals: "Égal à",
-    daily: "Quotidien",
-    weekly: "Hebdomadaire",
-    monthly: "Mensuel",
     status: "Statut",
     confirmDelete: "Êtes-vous sûr de vouloir supprimer cette alerte ?",
     error: "Erreur lors du chargement des alertes",
@@ -197,7 +192,6 @@ const Alert = ({ darkMode }) => {
       type: "temperature",
       condition: ">",
       value: "",
-      frequency: "daily",
       severity: "Information",
       isActive: true,
     });
@@ -210,7 +204,6 @@ const Alert = ({ darkMode }) => {
       severity: alert.severity || "Information",
       condition: alert.condition,
       value: alert.value,
-      frequency: alert.frequency,
       description: alert.description || "",
       isActive: alert.isActive,
     });
@@ -364,7 +357,6 @@ const Alert = ({ darkMode }) => {
               type: "temperature",
               condition: ">",
               value: "",
-              frequency: "daily",
               severity: "Information",
               isActive: true,
             });
@@ -536,30 +528,6 @@ const Alert = ({ darkMode }) => {
                     {getUnitForType(formData.type)}
                   </span>
                 </div>
-              </div>
-              <div>
-                <label
-                  className={`block text-sm font-medium mb-1 ${
-                    darkMode ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  {t.frequency}
-                </label>
-                <select
-                  value={formData.frequency}
-                  onChange={(e) =>
-                    setFormData({ ...formData, frequency: e.target.value })
-                  }
-                  className={`w-full p-2 border rounded-md ${
-                    darkMode
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-gray-900 border-gray-300"
-                  }`}
-                >
-                  <option value="daily">{t.daily}</option>
-                  <option value="weekly">{t.weekly}</option>
-                  <option value="monthly">{t.monthly}</option>
-                </select>
               </div>
             </div>
 
@@ -739,14 +707,6 @@ const Alert = ({ darkMode }) => {
                   </span>
                   <span className="font-bold text-gray-900 dark:text-white">
                     {alert.severity}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 items-center border-b pb-2">
-                  <span className="font-semibold text-gray-500 dark:text-gray-300">
-                    Fréquence :
-                  </span>
-                  <span className="font-bold text-gray-900 dark:text-white">
-                    {t[alert.frequency]}
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 items-start border-b pb-2">
