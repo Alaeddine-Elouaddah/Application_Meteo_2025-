@@ -28,6 +28,10 @@ const triggeredAlertSchema = new mongoose.Schema({
     required: true,
     enum: ["temperature", "humidity", "wind", "pressure", "rain", "uv"],
   },
+  isRead: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 module.exports = mongoose.model("TriggeredAlert", triggeredAlertSchema);

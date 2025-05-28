@@ -7,6 +7,15 @@ import {
   useNavigate,
   Link,
 } from "react-router-dom";
+import {
+  FaCheck,
+  FaTemperatureHigh,
+  FaTint,
+  FaWind,
+  FaMapMarkerAlt,
+  FaBell,
+  FaRegBell,
+} from "react-icons/fa";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 
@@ -31,6 +40,10 @@ import {
   Home,
   User as UserIcon,
   LogOut,
+  Bell,
+  Check,
+  Menu,
+  X,
 } from "lucide-react";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
@@ -187,11 +200,28 @@ const User = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [locationAccuracy, setLocationAccuracy] = useState(null);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [triggeredAlerts, setTriggeredAlerts] = useState([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
+  const [unreadAlertsCount, setUnreadAlertsCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const OPENWEATHER_API_KEY = "6e601e5bf166b100420a3cf427368540";
   const OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5";
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const fetchWeatherData = async () => {
     try {
@@ -360,11 +390,183 @@ const User = () => {
     });
   };
 
+  const fetchTriggeredAlerts = async () => {
+    try {
+      setLoadingAlerts(true);
+      const response = await fetch(
+        "http://localhost:8000/api/triggered-alerts",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setTriggeredAlerts(data.data);
+        setUnreadAlertsCount(data.data.length);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des alertes:", error);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  };
+
+  const handleMarkAsRead = async (alertId) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/triggered-alerts/${alertId}/read`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        setTriggeredAlerts((prevAlerts) =>
+          prevAlerts.filter((alert) => alert._id !== alertId)
+        );
+        setUnreadAlertsCount((prev) => prev - 1);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de l'alerte:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTriggeredAlerts();
+    const interval = setInterval(fetchTriggeredAlerts, 60000);
+    return () => clearInterval(interval);
+  }, []);
+  const renderAlertsSection = () => (
+    <div
+      className={`p-4 rounded-xl shadow-lg ${
+        darkMode ? "bg-gray-800" : "bg-white"
+      } mb-6`}
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <h3 className="text-lg font-bold flex items-center gap-2">
+          <FaBell className="text-blue-500" />
+          Alertes Récentes
+        </h3>
+      </div>
+
+      {loadingAlerts ? (
+        <div className="flex justify-center items-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : triggeredAlerts.length > 0 ? (
+        <div className="grid gap-4">
+          {triggeredAlerts.map((alert) => {
+            const Icon =
+              alert.type === "temperature"
+                ? FaTemperatureHigh
+                : alert.type === "humidity"
+                ? FaTint
+                : FaWind;
+
+            const iconColor =
+              alert.type === "temperature"
+                ? "text-red-500"
+                : alert.type === "humidity"
+                ? "text-blue-500"
+                : "text-green-500";
+
+            // Description selon le type d'alerte
+            const getAlertDescription = () => {
+              if (alert.type === "temperature") {
+                return alert.value > 30
+                  ? "Température très élevée détectée"
+                  : alert.value < 10
+                  ? "Température très basse détectée"
+                  : "Variation de température détectée";
+              } else if (alert.type === "humidity") {
+                return alert.value > 70
+                  ? "Humidité élevée détectée"
+                  : alert.value < 30
+                  ? "Humidité faible détectée"
+                  : "Variation d'humidité détectée";
+              } else {
+                return alert.value > 30
+                  ? "Vent fort détecté"
+                  : "Variation de vitesse de vent détectée";
+              }
+            };
+
+            return (
+              <div
+                key={alert._id}
+                className={`p-4 rounded-lg border-l-4 transition-all duration-300 ${
+                  darkMode ? "bg-gray-700" : "bg-gray-50"
+                } ${
+                  alert.isRead
+                    ? "border-gray-400 opacity-80"
+                    : "border-blue-500 shadow-md"
+                }`}
+              >
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex gap-3">
+                    <div className={`text-2xl mt-1 ${iconColor}`}>
+                      <Icon />
+                    </div>
+                    <div>
+                      <h4 className="font-medium flex items-center gap-2">
+                        {alert.alertId.name}
+                        {!alert.isRead && (
+                          <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                            Nouveau
+                          </span>
+                        )}
+                      </h4>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                        <FaMapMarkerAlt size={12} />
+                        {alert.city} •{" "}
+                        {new Date(alert.triggeredAt).toLocaleString()}
+                      </p>
+                      <p className="mt-1 text-sm italic">
+                        {getAlertDescription()}
+                      </p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {alert.value}
+                        {alert.type === "temperature"
+                          ? "°C"
+                          : alert.type === "humidity"
+                          ? "%"
+                          : "km/h"}
+                      </p>
+                    </div>
+                  </div>
+                  {!alert.isRead && (
+                    <button
+                      onClick={() => handleMarkAsRead(alert._id)}
+                      className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full transition-colors duration-200 flex items-center gap-1"
+                    >
+                      <FaCheck size={12} />
+                      <span>Marquer comme lu</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <FaRegBell className="mx-auto text-3xl mb-2" />
+          <p>Aucune alerte non lue</p>
+        </div>
+      )}
+    </div>
+  );
   const renderTabContent = () => {
     switch (activeTab) {
       case "dashboard":
         return (
           <>
+            {renderAlertsSection()}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
               <div>
                 <h2 className="text-2xl md:text-3xl font-bold">
@@ -668,6 +870,19 @@ const User = () => {
 
       case "profile":
         return <ProfileEdit darkMode={darkMode} />;
+
+      case "alerts":
+        return (
+          <div
+            className={`p-4 rounded-xl shadow ${
+              darkMode ? "bg-gray-800" : "bg-white"
+            }`}
+          >
+            <h2 className="text-2xl font-bold mb-6">Alertes</h2>
+            {renderAlertsSection()}
+          </div>
+        );
+
       default:
         return <Dashboard darkMode={darkMode} />;
     }
@@ -682,14 +897,43 @@ const User = () => {
             : "bg-gradient-to-br from-blue-50 to-gray-100"
         }`}
       >
+        {/* Mobile Header */}
+        <header
+          className={`md:hidden flex items-center justify-between p-4 ${
+            darkMode ? "bg-gray-800" : "bg-white"
+          } shadow-md`}
+        >
+          <h1 className="text-xl font-bold text-blue-500 flex items-center gap-2">
+            <MapPin size={20} /> Météo Pro
+          </h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-full ${
+                darkMode ? "bg-gray-700" : "bg-gray-200"
+              }`}
+            >
+              {darkMode ? <Sun size={18} /> : <CloudRain size={18} />}
+            </button>
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-full"
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
+        </header>
+
         {/* Sidebar avec animation et transition */}
         <aside
           className={`w-full md:w-64 p-4 ${
             darkMode ? "bg-gray-800" : "bg-white"
-          } shadow-lg transform transition-transform duration-300 ease-in-out`}
+          } shadow-lg transform transition-transform duration-300 ease-in-out ${
+            mobileMenuOpen ? "block" : "hidden md:block"
+          }`}
         >
           <div className="flex flex-col h-full">
-            <div className="flex justify-between items-center mb-6">
+            <div className="hidden md:flex justify-between items-center mb-6">
               <h1 className="text-xl md:text-2xl font-bold text-blue-500 flex items-center gap-2 hover:text-blue-600 transition-colors duration-200">
                 <MapPin size={20} /> Météo Pro
               </h1>
@@ -720,6 +964,12 @@ const User = () => {
                     label: "Comparaisons",
                   },
                   {
+                    to: "/user/alerts",
+                    icon: <Bell size={18} />,
+                    label: "Alertes",
+                    badge: unreadAlertsCount > 0 ? unreadAlertsCount : null,
+                  },
+                  {
                     to: "/user/profile",
                     icon: <UserIcon size={18} />,
                     label: "Profil",
@@ -728,8 +978,9 @@ const User = () => {
                   <li key={item.to}>
                     <NavLink
                       to={item.to}
+                      onClick={() => setMobileMenuOpen(false)}
                       className={({ isActive }) =>
-                        `w-full flex items-center gap-3 px-4 py-2 rounded-lg text-left transition-all duration-200 ${
+                        `w-full flex items-center justify-between px-4 py-2 rounded-lg text-left transition-all duration-200 ${
                           isActive
                             ? darkMode
                               ? "bg-gray-700 text-white"
@@ -740,8 +991,15 @@ const User = () => {
                         }`
                       }
                     >
-                      {item.icon}
-                      <span>{item.label}</span>
+                      <div className="flex items-center gap-3">
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                          {item.badge}
+                        </span>
+                      )}
                     </NavLink>
                   </li>
                 ))}
@@ -773,7 +1031,6 @@ const User = () => {
                       } catch (error) {
                         console.error("Erreur lors de la déconnexion:", error);
                       }
-                      setProfileMenuOpen(false);
                     }}
                   >
                     <LogOut className="w-4 h-4 mr-2" />
@@ -812,6 +1069,19 @@ const User = () => {
               <Route
                 path="/comparisons"
                 element={<Comparisons darkMode={darkMode} />}
+              />
+              <Route
+                path="/alerts"
+                element={
+                  <div
+                    className={`p-4 rounded-xl shadow ${
+                      darkMode ? "bg-gray-800" : "bg-white"
+                    }`}
+                  >
+                    <h2 className="text-2xl font-bold mb-6">Alertes</h2>
+                    {renderAlertsSection()}
+                  </div>
+                }
               />
               <Route
                 path="/profile"

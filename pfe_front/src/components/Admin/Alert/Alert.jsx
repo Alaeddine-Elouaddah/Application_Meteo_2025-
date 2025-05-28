@@ -44,6 +44,7 @@ const Alert = ({ darkMode }) => {
     type: "temperature",
     condition: ">",
     value: "",
+    description: "",
     frequency: "daily",
     severity: "Information",
     isActive: true,
@@ -210,6 +211,7 @@ const Alert = ({ darkMode }) => {
       condition: alert.condition,
       value: alert.value,
       frequency: alert.frequency,
+      description: alert.description || "",
       isActive: alert.isActive,
     });
     openModal();
@@ -404,6 +406,28 @@ const Alert = ({ darkMode }) => {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label
+                  className={`block text-sm font-medium mb-1 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  {t.description}
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className={`w-full p-2 border rounded-md ${
+                    darkMode
+                      ? "bg-gray-700 text-white border-gray-600"
+                      : "bg-white text-gray-900 border-gray-300"
+                  }`}
+                  rows="3"
+                  required
+                />
+              </div>
               <div>
                 <label
                   className={`block text-sm font-medium mb-1 ${
@@ -451,7 +475,7 @@ const Alert = ({ darkMode }) => {
                   }`}
                 >
                   <option value="Danger">{t.danger}</option>
-                  <option value="Avertissement">{t.warning}</option>
+                  <option value="Warning">{t.warning}</option>
                   <option value="Information">{t.information}</option>
                 </select>
               </div>
@@ -643,7 +667,7 @@ const Alert = ({ darkMode }) => {
             }`}
           >
             <div className="p-6">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center">
                   <div className="mr-3">
                     {getTypeIcon(alert.type, alert.isActive)}
@@ -666,7 +690,7 @@ const Alert = ({ darkMode }) => {
                         : ""
                     }
                     ${
-                      alert.severity === "Avertissement"
+                      alert.severity === "Warning"
                         ? "bg-orange-100 text-orange-800"
                         : ""
                     }
@@ -680,7 +704,7 @@ const Alert = ({ darkMode }) => {
                   {alert.severity === "Danger" && (
                     <FiAlertTriangle className="text-red-500" />
                   )}
-                  {alert.severity === "Avertissement" && (
+                  {alert.severity === "Warning" && (
                     <FiAlertCircle className="text-orange-500" />
                   )}
                   {alert.severity === "Information" && (
@@ -690,91 +714,62 @@ const Alert = ({ darkMode }) => {
                 </span>
               </div>
 
-              <div className="mt-4 space-y-2">
-                <div className="flex justify-between">
-                  <span
-                    className={`text-sm ${
-                      darkMode ? "text-gray-300" : "text-gray-600"
-                    }`}
-                  >
-                    Condition:
+              <div className="mt-4 space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-2 items-center border-b pb-2">
+                  <span className="font-semibold text-gray-500 dark:text-gray-300">
+                    Condition :
                   </span>
-                  <span
-                    className={`text-sm font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}
-                  >
+                  <span className="font-bold text-gray-900 dark:text-white">
                     {getTypeLabel(alert.type)}{" "}
                     {getConditionText(alert.condition)}{" "}
-                    <span className="font-bold">{alert.value}</span>
+                    <span className="font-extrabold">{alert.value}</span>
                   </span>
                 </div>
-
-                <div className="flex justify-between">
-                  <span
-                    className={`text-sm ${
-                      darkMode ? "text-gray-300" : "text-gray-600"
-                    }`}
-                  >
-                    Seuil:
+                <div className="grid grid-cols-2 gap-2 items-center border-b pb-2">
+                  <span className="font-semibold text-gray-500 dark:text-gray-300">
+                    Seuil :
                   </span>
-                  <span
-                    className={`text-sm font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}
-                  >
+                  <span className="font-bold text-gray-900 dark:text-white">
                     {alert.value} {getUnitForType(alert.type)}
                   </span>
                 </div>
-
-                <div className="flex justify-between">
-                  <span
-                    className={`text-sm ${
-                      darkMode ? "text-gray-300" : "text-gray-600"
-                    }`}
-                  >
-                    Sévérité:
+                <div className="grid grid-cols-2 gap-2 items-center border-b pb-2">
+                  <span className="font-semibold text-gray-500 dark:text-gray-300">
+                    Sévérité :
                   </span>
-                  <span
-                    className={`text-sm font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}
-                  >
+                  <span className="font-bold text-gray-900 dark:text-white">
                     {alert.severity}
                   </span>
                 </div>
-
-                <div className="flex justify-between">
-                  <span
-                    className={`text-sm ${
-                      darkMode ? "text-gray-300" : "text-gray-600"
-                    }`}
-                  >
-                    Fréquence:
+                <div className="grid grid-cols-2 gap-2 items-center border-b pb-2">
+                  <span className="font-semibold text-gray-500 dark:text-gray-300">
+                    Fréquence :
                   </span>
-                  <span
-                    className={`text-sm font-medium ${
-                      darkMode ? "text-white" : "text-gray-900"
-                    }`}
-                  >
+                  <span className="font-bold text-gray-900 dark:text-white">
                     {t[alert.frequency]}
                   </span>
                 </div>
-
-                <div className="flex justify-between items-center">
-                  <span
-                    className={`text-sm ${
-                      darkMode ? "text-gray-300" : "text-gray-600"
-                    }`}
+                <div className="grid grid-cols-2 gap-2 items-start border-b pb-2">
+                  <span className="font-semibold text-gray-500 dark:text-gray-300">
+                    Description :
+                  </span>
+                  <div
+                    className="whitespace-pre-line break-words font-medium text-gray-800 dark:text-gray-100 w-full max-h-24 overflow-y-auto pr-2"
+                    style={{ minWidth: 0, wordBreak: "break-word" }}
                   >
-                    Statut:
+                    {alert.description}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 items-center">
+                  <span className="font-semibold text-gray-500 dark:text-gray-300">
+                    Statut :
                   </span>
                   <span
                     className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full ${
                       alert.isActive
                         ? "bg-green-100 text-green-800"
                         : "bg-gray-100 text-gray-800"
-                    }`}
+                    } justify-self-start`}
                   >
                     <span
                       className={`w-2 h-2 rounded-full ${

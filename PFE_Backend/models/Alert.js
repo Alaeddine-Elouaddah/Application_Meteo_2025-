@@ -11,6 +11,10 @@ const alertSchema = new mongoose.Schema({
     required: true,
     enum: ["temperature", "humidity", "wind", "pressure", "rain", "uv"],
   },
+  description: {
+    type: String,
+    required: true,
+  },
   condition: {
     type: String,
     required: true,
@@ -23,6 +27,18 @@ const alertSchema = new mongoose.Schema({
   threshold: {
     min: Number,
     max: Number,
+  },
+  severity: {
+    type: String,
+    required: true,
+    enum: ["Danger", "Warning", "Information"],
+    default: "Information",
+  },
+  frequency: {
+    type: String,
+    required: true,
+    enum: ["hourly", "daily", "weekly", "monthly"],
+    default: "daily",
   },
   isActive: {
     type: Boolean,
