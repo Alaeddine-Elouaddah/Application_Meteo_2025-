@@ -28,6 +28,24 @@ const triggeredAlertSchema = new mongoose.Schema({
     required: true,
     enum: ["temperature", "humidity", "wind", "pressure", "rain", "uv"],
   },
+  description: {
+    type: String,
+    required: false,
+  },
+  severity: {
+    type: String,
+    required: false,
+    enum: ["Danger", "Warning", "Information"],
+  },
+  frequency: {
+    type: String,
+    required: false,
+    enum: ["hourly", "daily", "weekly", "monthly"],
+  },
+  alertValue: {
+    type: Number,
+    required: false,
+  },
   isRead: {
     type: Boolean,
     default: false,

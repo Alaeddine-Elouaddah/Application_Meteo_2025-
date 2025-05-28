@@ -442,123 +442,165 @@ const User = () => {
     return () => clearInterval(interval);
   }, []);
   const renderAlertsSection = () => (
-    <div
-      className={`p-4 rounded-xl shadow-lg ${
-        darkMode ? "bg-gray-800" : "bg-white"
-      } mb-6`}
-    >
-      <div className="flex items-center gap-2 mb-4">
-        <h3 className="text-lg font-bold flex items-center gap-2">
-          <FaBell className="text-blue-500" />
-          Alertes Récentes
-        </h3>
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {triggeredAlerts.map((alert) => {
+        // Icônes par type
+        const typeIcons = {
+          temperature: <FaTemperatureHigh className="text-red-500 text-2xl" />,
+          humidity: <FaTint className="text-blue-500 text-2xl" />,
+          wind: <FaWind className="text-green-500 text-2xl" />,
+          pressure: <FaMapMarkerAlt className="text-purple-500 text-2xl" />,
+          rain: <CloudRain className="text-blue-400 text-2xl" />,
+          uv: <Sun className="text-yellow-400 text-2xl" />,
+        };
 
-      {loadingAlerts ? (
-        <div className="flex justify-center items-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      ) : triggeredAlerts.length > 0 ? (
-        <div className="grid gap-4">
-          {triggeredAlerts.map((alert) => {
-            const Icon =
-              alert.type === "temperature"
-                ? FaTemperatureHigh
-                : alert.type === "humidity"
-                ? FaTint
-                : FaWind;
+        const icon = typeIcons[alert.type] || (
+          <FaBell className="text-blue-500 text-2xl" />
+        );
 
-            const iconColor =
-              alert.type === "temperature"
-                ? "text-red-500"
-                : alert.type === "humidity"
-                ? "text-blue-500"
-                : "text-green-500";
+        // Couleurs selon la sévérité
+        const severityColors = {
+          Danger: "bg-red-100 text-red-800",
+          Warning: "bg-orange-100 text-orange-800",
+          Info: "bg-blue-100 text-blue-800",
+        };
 
-            // Description selon le type d'alerte
-            const getAlertDescription = () => {
-              if (alert.type === "temperature") {
-                return alert.value > 30
-                  ? "Température très élevée détectée"
-                  : alert.value < 10
-                  ? "Température très basse détectée"
-                  : "Variation de température détectée";
-              } else if (alert.type === "humidity") {
-                return alert.value > 70
-                  ? "Humidité élevée détectée"
-                  : alert.value < 30
-                  ? "Humidité faible détectée"
-                  : "Variation d'humidité détectée";
-              } else {
-                return alert.value > 30
-                  ? "Vent fort détecté"
-                  : "Variation de vitesse de vent détectée";
-              }
-            };
+        return (
+          <div
+            key={alert._id}
+            className={`rounded-xl shadow-md overflow-hidden border-l-4 ${
+              alert.severity === "Danger"
+                ? "border-red-500"
+                : alert.severity === "Warning"
+                ? "border-orange-500"
+                : "border-blue-500"
+            } ${darkMode ? "bg-gray-800" : "bg-white"}`}
+          >
+            <div className="p-5">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  {icon}
+                  <h3 className="text-lg font-bold capitalize">{alert.type}</h3>
+                </div>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    severityColors[alert.severity]
+                  }`}
+                >
+                  {alert.severity}
+                </span>
+              </div>
 
-            return (
-              <div
-                key={alert._id}
-                className={`p-4 rounded-lg border-l-4 transition-all duration-300 ${
-                  darkMode ? "bg-gray-700" : "bg-gray-50"
-                } ${
-                  alert.isRead
-                    ? "border-gray-400 opacity-80"
-                    : "border-blue-500 shadow-md"
-                }`}
-              >
-                <div className="flex justify-between items-start gap-3">
-                  <div className="flex gap-3">
-                    <div className={`text-2xl mt-1 ${iconColor}`}>
-                      <Icon />
-                    </div>
-                    <div>
-                      <h4 className="font-medium flex items-center gap-2">
-                        {alert.alertId.name}
-                        {!alert.isRead && (
-                          <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
-                            Nouveau
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Condition
+                  </p>
+                  <p className="font-medium">
+                    {(() => {
+                      let unit = "";
+                      switch (alert.type) {
+                        case "temperature":
+                          unit = "°C";
+                          break;
+                        case "humidity":
+                          unit = "%";
+                          break;
+                        case "wind":
+                          unit = "km/h";
+                          break;
+                        case "pressure":
+                          unit = "hPa";
+                          break;
+                        case "rain":
+                          unit = "mm";
+                          break;
+                        case "uv":
+                          unit = "UVI";
+                          break;
+                        default:
+                          unit = "";
+                      }
+                      const op =
+                        alert.alertId?.condition || alert.condition || ">";
+                      const seuil =
+                        alert.alertValue !== undefined
+                          ? alert.alertValue
+                          : alert.alertId?.value !== undefined
+                          ? alert.alertId.value
+                          : "-";
+                      return (
+                        <span>
+                          <span className="font-bold">
+                            {alert.value}
+                            {unit}
                           </span>
-                        )}
-                      </h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                        <FaMapMarkerAlt size={12} />
-                        {alert.city} •{" "}
-                        {new Date(alert.triggeredAt).toLocaleString()}
-                      </p>
-                      <p className="mt-1 text-sm italic">
-                        {getAlertDescription()}
-                      </p>
-                      <p className="mt-1 text-lg font-semibold">
-                        {alert.value}
-                        {alert.type === "temperature"
-                          ? "°C"
-                          : alert.type === "humidity"
-                          ? "%"
-                          : "km/h"}
-                      </p>
-                    </div>
+                          <span className="mx-1">{op}</span>
+                          <span className="font-bold">
+                            {seuil}
+                            {unit}
+                          </span>
+                        </span>
+                      );
+                    })()}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Fréquence
+                  </p>
+                  <p className="font-medium capitalize">{alert.frequency}</p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Localisation
+                  </p>
+                  <p className="font-medium">{alert.city}</p>
+                </div>
+
+                {alert.description && (
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Description
+                    </p>
+                    <p className="font-medium">{alert.description}</p>
                   </div>
+                )}
+
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Déclenchée le
+                  </p>
+                  <p className="font-medium">
+                    {new Date(alert.triggeredAt).toLocaleString("fr-FR", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })}
+                  </p>
+                </div>
+
+                <div className="pt-2 flex justify-between items-center">
+                  <span className="text-xs text-gray-400"></span>
                   {!alert.isRead && (
                     <button
                       onClick={() => handleMarkAsRead(alert._id)}
-                      className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full transition-colors duration-200 flex items-center gap-1"
+                      className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full transition-colors"
                     >
-                      <FaCheck size={12} />
-                      <span>Marquer comme lu</span>
+                      Marquer comme lu
                     </button>
                   )}
                 </div>
               </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <FaRegBell className="mx-auto text-3xl mb-2" />
-          <p>Aucune alerte non lue</p>
-        </div>
-      )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
   const renderTabContent = () => {

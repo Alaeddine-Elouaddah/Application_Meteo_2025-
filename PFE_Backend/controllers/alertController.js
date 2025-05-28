@@ -202,6 +202,10 @@ exports.checkAndSendAlerts = async () => {
             city: user.city.name || user.city,
             value: currentValue,
             type: alert.type,
+            description: alert.description,
+            severity: alert.severity,
+            frequency: alert.frequency,
+            alertValue: alert.value,
             triggeredAt: new Date(),
           });
         } catch (error) {
@@ -246,18 +250,45 @@ function checkAlertCondition(alert, currentValue) {
 }
 
 function generateAlertEmailContent(alert, currentValue, city) {
+  // Icônes par type
+  const icons = {
+    temperature: "🌡️",
+    humidity: "💧",
+    wind: "💨",
+    pressure: "⚖️",
+    rain: "🌧️",
+    uv: "☀️",
+  };
+  const icon = icons[alert.type] || "🔔";
   return `
-    <h2>Alerte ${alert.type}</h2>
-    <p>Ville: <strong>${city.name || city}</strong></p>
-    <p>Valeur actuelle: <strong>${currentValue} ${getUnit(
+    <div style="font-family: Arial, sans-serif; background: #f9f9f9; padding: 24px; border-radius: 12px; max-width: 480px; margin: auto;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-size: 2.2rem;">${icon}</span>
+        <h2 style="margin: 0; color: #2563eb;">Alerte ${
+          alert.type.charAt(0).toUpperCase() + alert.type.slice(1)
+        }</h2>
+      </div>
+      <hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;" />
+      <p><strong>Ville :</strong> ${city.name || city}</p>
+      <p><strong>Valeur actuelle :</strong> <span style="color: #d97706;">${currentValue} ${getUnit(
     alert.type
-  )}</strong></p>
-    <p>Condition: ${formatCondition(alert)}</p>
-    <p>Date: ${new Date().toLocaleString()}</p>
-    <p>Seuil: ${
-      alert.value ||
-      `${alert.threshold?.min ?? "-"}-${alert.threshold?.max ?? "-"}`
-    }</p>
+  )}</span></p>
+      <p><strong>Condition :</strong> ${formatCondition(alert)}</p>
+      <p><strong>Date :</strong> ${new Date().toLocaleString()}</p>
+      <p><strong>Seuil :</strong> ${
+        alert.value ||
+        `${alert.threshold?.min ?? "-"}-${alert.threshold?.max ?? "-"}`
+      }</p>
+      <p><strong>Description :</strong> ${alert.description || "-"}</p>
+      <p><strong>Sévérité :</strong> <span style="color: ${
+        alert.severity === "Danger"
+          ? "#dc2626"
+          : alert.severity === "Warning"
+          ? "#f59e42"
+          : "#2563eb"
+      }; font-weight: bold;">${alert.severity || "-"}</span></p>
+      <p><strong>Fréquence :</strong> ${alert.frequency || "-"}</p>
+    </div>
   `;
 }
 
