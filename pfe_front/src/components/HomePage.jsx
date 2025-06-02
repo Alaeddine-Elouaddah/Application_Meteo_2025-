@@ -671,33 +671,6 @@ const HomePage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gray-900 text-white">
-        <div className="container mx-auto px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <h2 className="text-3xl font-bold mb-6">
-              Prêt à anticiper les conditions météo ?
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto mb-10">
-              Rejoignez des milliers de professionnels qui utilisent déjà notre
-              plateforme pour surveiller les conditions météorologiques et
-              environnementales.
-            </p>
-            <motion.button
-              onClick={() => navigate("/Login")}
-              className="bg-blue-600 text-white px-10 py-4 rounded-lg font-medium text-lg hover:bg-blue-700 transition-colors inline-flex items-center"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Commencer Maintenat <FaArrowRight className="ml-3" />
-            </motion.button>
-          </motion.div>
-        </div>
-      </section>
 
       {/* Footer */}
     </div>

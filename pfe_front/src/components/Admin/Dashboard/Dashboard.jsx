@@ -1328,7 +1328,7 @@ const Dashboard = ({ darkMode }) => {
             {/* Prévisions 6 jours */}
             <div className={`p-6 rounded-xl shadow ${cardClass}`}>
               <h3 className={`text-xl font-semibold ${textClass} mb-4`}>
-                Prévisions 6 jours
+                Prévisions 5 jours
               </h3>
               <div className="space-y-3">
                 {forecastData.map((day, index) => (

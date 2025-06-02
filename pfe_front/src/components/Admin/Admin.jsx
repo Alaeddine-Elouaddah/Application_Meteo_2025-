@@ -87,18 +87,8 @@ const Admin = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activePath, setActivePath] = useState("");
   const [darkMode, setDarkMode] = useDarkMode();
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      text: "Nouvelle comparaison effectuée",
-      read: false,
-      time: "10 min",
-    },
-    { id: 2, text: "Alerte météo déclenchée", read: false, time: "1h" },
-    { id: 3, text: "Mise à jour disponible", read: true, time: "2j" },
-  ]);
+
   const location = useLocation();
 
   useEffect(() => {
@@ -111,14 +101,6 @@ const Admin = () => {
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
-
-  const markNotificationAsRead = (id) => {
-    setNotifications(
-      notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
-  };
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -249,67 +231,6 @@ const Admin = () => {
                 <Moon className="w-5 h-5" />
               )}
             </button>
-
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setNotificationsOpen(!notificationsOpen);
-                  setProfileMenuOpen(false);
-                }}
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 relative transition-colors duration-200"
-                aria-label="Notifications"
-              >
-                <Bell className="w-5 h-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {notificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 transition-colors duration-200">
-                  <div className="p-4 border-b border-gray-200 dark:border-gray-600">
-                    <h3 className="font-medium text-gray-800 dark:text-gray-200">
-                      Notifications
-                    </h3>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {notifications.length > 0 ? (
-                      notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className={`p-4 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${
-                            !notification.read
-                              ? "bg-blue-50 dark:bg-gray-700"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            markNotificationAsRead(notification.id)
-                          }
-                        >
-                          <p className="text-sm text-gray-800 dark:text-gray-200">
-                            {notification.text}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {notification.time}
-                          </p>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                        Aucune notification
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-2 border-t border-gray-200 dark:border-gray-600 text-center">
-                    <button className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                      Voir toutes les notifications
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
 
             <div className="relative">
               <button
