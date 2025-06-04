@@ -467,7 +467,7 @@ const Alert = ({ darkMode }) => {
                   }`}
                 >
                   <option value="Danger">{t.danger}</option>
-                  <option value="Warning">{t.warning}</option>
+                  <option value="Avertissement">{t.warning}</option>
                   <option value="Information">{t.information}</option>
                 </select>
               </div>
@@ -658,7 +658,7 @@ const Alert = ({ darkMode }) => {
                         : ""
                     }
                     ${
-                      alert.severity === "Warning"
+                      alert.severity === "Avertissement"
                         ? "bg-orange-100 text-orange-800"
                         : ""
                     }
@@ -672,7 +672,7 @@ const Alert = ({ darkMode }) => {
                   {alert.severity === "Danger" && (
                     <FiAlertTriangle className="text-red-500" />
                   )}
-                  {alert.severity === "Warning" && (
+                  {alert.severity === "Avertissement" && (
                     <FiAlertCircle className="text-orange-500" />
                   )}
                   {alert.severity === "Information" && (

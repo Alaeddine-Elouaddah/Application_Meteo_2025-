@@ -68,7 +68,7 @@ const translations = {
     noAlerts: "Aucune alerte",
     refresh: "Actualiser",
     coordinatesPlaceholder: "Latitude, Longitude (ex: 30.42,-9.58)",
-    searchByCoordinates: "Rechercher par coordonnées",
+    searchByCoordinates: "coordonnées",
   },
   en: {
     title: "Comparisons",
@@ -835,14 +835,14 @@ const Comparisons = ({ darkMode }) => {
 
       <div className="max-w-7xl mx-auto">
         {/* Barre de recherche améliorée */}
-        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
-          <div className="flex items-center mb-4 md:mb-0">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <h1 className={`text-2xl font-bold ${textClass}`}>{t.title}</h1>
-          </div>
 
-          <div className="flex flex-col md:flex-row gap-4 w-full justify-end">
-            <form onSubmit={handleSearch} className="flex w-full md:w-auto">
-              <div className="relative flex-grow md:flex-grow-0">
+            {/* Conteneur unique pour tous les éléments de recherche et coordonnées */}
+            <div className="flex flex-wrap gap-2 items-center">
+              {/* Recherche par nom */}
+              <div className="relative">
                 <input
                   type="text"
                   value={searchInput}
@@ -856,9 +856,8 @@ const Comparisons = ({ darkMode }) => {
                     setTimeout(() => setShowSuggestions(false), 200)
                   }
                   placeholder={t.searchPlaceholder}
-                  className={`w-full md:w-64 px-4 py-2 rounded-l-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                  className={`w-full md:w-64 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 />
-
                 {showSuggestions && searchSuggestions.length > 0 && (
                   <div
                     className={`absolute z-10 w-full mt-1 rounded-md shadow-lg ${
@@ -873,9 +872,7 @@ const Comparisons = ({ darkMode }) => {
                         className={`px-4 py-2 cursor-pointer ${
                           darkMode ? "hover:bg-gray-600" : "hover:bg-gray-100"
                         }`}
-                        onClick={() => {
-                          handleCitySelect(city);
-                        }}
+                        onClick={() => handleCitySelect(city)}
                       >
                         {city.name}, {city.country}
                         {city.state && `, ${city.state}`}
@@ -885,55 +882,53 @@ const Comparisons = ({ darkMode }) => {
                 )}
               </div>
               <button
-                type="submit"
-                className={`px-4 py-2 rounded-r-lg ${buttonClass} text-white`}
+                type="button"
+                className={`px-4 py-2 rounded-lg ${buttonClass} text-white`}
+                onClick={handleSearch}
               >
                 {t.search}
               </button>
+
+              {/* Bouton de détection de localisation */}
               <button
                 type="button"
-                className="px-4 py-2 ml-2 rounded-lg bg-green-600 hover:bg-green-700 text-white flex items-center"
+                className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white flex items-center"
                 onClick={detectLocationTemp}
               >
-                <FiNavigation className="inline mr-1" />
+                <FiNavigation className="mr-2" />
                 Détecter
               </button>
-            </form>
 
-            <form
-              onSubmit={handleCoordinateSearch}
-              className="flex w-full md:w-auto"
-            >
-              <div className="relative flex-grow md:flex-grow-0 flex gap-2">
-                <input
-                  type="number"
-                  value={latitudeInput}
-                  onChange={(e) => setLatitudeInput(e.target.value)}
-                  placeholder="Latitude (ex: 30.42)"
-                  min="-90"
-                  max="90"
-                  step="0.000001"
-                  className={`w-32 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                />
-                <input
-                  type="number"
-                  value={longitudeInput}
-                  onChange={(e) => setLongitudeInput(e.target.value)}
-                  placeholder="Longitude (ex: -9.58)"
-                  min="-180"
-                  max="180"
-                  step="0.000001"
-                  className={`w-32 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                />
-                <button
-                  type="submit"
-                  className={`px-4 py-2 rounded-lg ${buttonClass} text-white`}
-                >
-                  <FiNavigation className="inline mr-1" />
-                  {t.searchByCoordinates}
-                </button>
-              </div>
-            </form>
+              {/* Recherche par coordonnées */}
+              <input
+                type="number"
+                value={latitudeInput}
+                onChange={(e) => setLatitudeInput(e.target.value)}
+                placeholder="Latitude"
+                min="-90"
+                max="90"
+                step="0.000001"
+                className={`w-24 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              <input
+                type="number"
+                value={longitudeInput}
+                onChange={(e) => setLongitudeInput(e.target.value)}
+                placeholder="Longitude"
+                min="-180"
+                max="180"
+                step="0.000001"
+                className={`w-24 px-4 py-2 rounded-lg border ${inputClass} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              />
+              <button
+                type="button"
+                className={`px-4 py-2 rounded-lg ${buttonClass} text-white flex items-center`}
+                onClick={handleCoordinateSearch}
+              >
+                <FiNavigation className="inline mr-1" />
+                {t.searchByCoordinates}
+              </button>
+            </div>
           </div>
         </div>
 

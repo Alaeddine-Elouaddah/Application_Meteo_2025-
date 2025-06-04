@@ -441,164 +441,188 @@ const User = () => {
     const interval = setInterval(fetchTriggeredAlerts, 60000);
     return () => clearInterval(interval);
   }, []);
-  const renderAlertsSection = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {triggeredAlerts.map((alert) => {
-        // Icônes par type
-        const typeIcons = {
-          temperature: <FaTemperatureHigh className="text-red-500 text-2xl" />,
-          humidity: <FaTint className="text-blue-500 text-2xl" />,
-          wind: <FaWind className="text-green-500 text-2xl" />,
-          pressure: <FaMapMarkerAlt className="text-purple-500 text-2xl" />,
-          rain: <CloudRain className="text-blue-400 text-2xl" />,
-          uv: <Sun className="text-yellow-400 text-2xl" />,
-        };
 
-        const icon = typeIcons[alert.type] || (
-          <FaBell className="text-blue-500 text-2xl" />
-        );
+  const renderAlertsSection = () => {
+    // Objet de traduction pour les types d'alertes
+    const typeTranslations = {
+      temperature: "Température",
+      humidity: "Humidité",
+      wind: "Vent",
+      pressure: "Pression",
+      rain: "Pluie",
+      uv: "UV",
+    };
 
-        // Couleurs selon la sévérité
-        const severityColors = {
-          Danger: "bg-red-100 text-red-800",
-          Warning: "bg-orange-100 text-orange-800",
-          Info: "bg-blue-100 text-blue-800",
-        };
+    // Objet de traduction pour les sévérités
+    const severityTranslations = {
+      Danger: "Danger",
+      Warning: "Avertissement",
+      Information: "Information",
+    };
 
-        return (
-          <div
-            key={alert._id}
-            className={`rounded-xl shadow-lg overflow-hidden border-l-4 transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl ${
-              alert.severity === "Danger"
-                ? "border-red-500 hover:shadow-red-100"
-                : alert.severity === "Warning"
-                ? "border-orange-500 hover:shadow-orange-100"
-                : "border-blue-500 hover:shadow-blue-100"
-            } ${darkMode ? "bg-gray-800" : "bg-white"} relative group`}
-          >
-            {/* Effet de fond au survol */}
-            <div className="absolute inset-0 bg-gradient-to-br from-transparent to-white dark:to-gray-700 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {triggeredAlerts.map((alert) => {
+          // Icônes par type
+          const typeIcons = {
+            temperature: (
+              <FaTemperatureHigh className="text-red-500 text-2xl" />
+            ),
+            humidity: <FaTint className="text-blue-500 text-2xl" />,
+            wind: <FaWind className="text-green-500 text-2xl" />,
+            pressure: <FaMapMarkerAlt className="text-purple-500 text-2xl" />,
+            rain: <CloudRain className="text-blue-400 text-2xl" />,
+            uv: <Sun className="text-yellow-400 text-2xl" />,
+          };
 
-            <div className="p-5 relative z-10">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  {icon}
-                  <h3 className="text-lg font-bold capitalize">{alert.type}</h3>
-                </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    severityColors[alert.severity]
-                  }`}
-                >
-                  {alert.severity}
-                </span>
-              </div>
+          const icon = typeIcons[alert.type] || (
+            <FaBell className="text-blue-500 text-2xl" />
+          );
 
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Condition
-                  </p>
-                  <p className="font-medium">
-                    {(() => {
-                      let unit = "";
-                      switch (alert.type) {
-                        case "temperature":
-                          unit = "°C";
-                          break;
-                        case "humidity":
-                          unit = "%";
-                          break;
-                        case "wind":
-                          unit = "km/h";
-                          break;
-                        case "pressure":
-                          unit = "hPa";
-                          break;
-                        case "rain":
-                          unit = "mm";
-                          break;
-                        case "uv":
-                          unit = "UVI";
-                          break;
-                        default:
-                          unit = "";
-                      }
-                      const op =
-                        alert.alertId?.condition || alert.condition || ">";
-                      const seuil =
-                        alert.alertValue !== undefined
-                          ? alert.alertValue
-                          : alert.alertId?.value !== undefined
-                          ? alert.alertId.value
-                          : "-";
-                      return (
-                        <span>
-                          <span className="font-bold">
-                            {alert.value}
-                            {unit}
-                          </span>
-                          <span className="mx-1">{op}</span>
-                          <span className="font-bold">
-                            {seuil}
-                            {unit}
-                          </span>
-                        </span>
-                      );
-                    })()}
-                  </p>
+          // Couleurs selon la sévérité
+          const severityColors = {
+            Danger: "bg-red-100 text-red-800",
+            Avertissement: "bg-orange-100 text-orange-800",
+            Information: "bg-blue-100 text-blue-800",
+          };
+
+          return (
+            <div
+              key={alert._id}
+              className={`rounded-xl shadow-lg overflow-hidden border-l-4 transform transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl ${
+                alert.severity === "Danger"
+                  ? "border-red-500 hover:shadow-red-100"
+                  : alert.severity === "Avertissement"
+                  ? "border-orange-500 hover:shadow-orange-100"
+                  : "border-blue-500 hover:shadow-blue-100"
+              } ${darkMode ? "bg-gray-800" : "bg-white"} relative group`}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent to-white dark:to-gray-700 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+
+              <div className="p-5 relative z-10">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                    {icon}
+                    <h3 className="text-lg font-bold capitalize">
+                      {typeTranslations[alert.type]}
+                    </h3>
+                  </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      severityColors[alert.severity]
+                    }`}
+                  >
+                    {severityTranslations[alert.severity]}
+                  </span>
                 </div>
 
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Localisation
-                  </p>
-                  <p className="font-medium">{alert.city}</p>
-                </div>
-
-                {alert.description && (
+                <div className="space-y-3">
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Description
+                      Condition
                     </p>
-                    <p className="font-medium">{alert.description}</p>
+                    <p className="font-medium">
+                      {(() => {
+                        let unit = "";
+                        switch (alert.type) {
+                          case "temperature":
+                            unit = "°C";
+                            break;
+                          case "humidity":
+                            unit = "%";
+                            break;
+                          case "wind":
+                            unit = "km/h";
+                            break;
+                          case "pressure":
+                            unit = "hPa";
+                            break;
+                          case "rain":
+                            unit = "mm";
+                            break;
+                          case "uv":
+                            unit = "UVI";
+                            break;
+                          default:
+                            unit = "";
+                        }
+                        const op =
+                          alert.alertId?.condition || alert.condition || ">";
+                        const seuil =
+                          alert.alertValue !== undefined
+                            ? alert.alertValue
+                            : alert.alertId?.value !== undefined
+                            ? alert.alertId.value
+                            : "-";
+                        return (
+                          <span>
+                            <span className="font-bold">
+                              {alert.value}
+                              {unit}
+                            </span>
+                            <span className="mx-1">{op}</span>
+                            <span className="font-bold">
+                              {seuil}
+                              {unit}
+                            </span>
+                          </span>
+                        );
+                      })()}
+                    </p>
                   </div>
-                )}
 
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Déclenchée le
-                  </p>
-                  <p className="font-medium">
-                    {new Date(alert.triggeredAt).toLocaleString("fr-FR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                    })}
-                  </p>
-                </div>
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Localisation
+                    </p>
+                    <p className="font-medium">{alert.city}</p>
+                  </div>
 
-                <div className="pt-2 flex justify-between items-center">
-                  <span className="text-xs text-gray-400"></span>
-                  {!alert.isRead && (
-                    <button
-                      onClick={() => handleMarkAsRead(alert._id)}
-                      className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full transition-colors transform group-hover:scale-110"
-                    >
-                      Marquer comme lu
-                    </button>
+                  {alert.description && (
+                    <div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Description
+                      </p>
+                      <p className="font-medium">{alert.description}</p>
+                    </div>
                   )}
+
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Déclenchée le
+                    </p>
+                    <p className="font-medium">
+                      {new Date(alert.triggeredAt).toLocaleString("fr-FR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 flex justify-between items-center">
+                    <span className="text-xs text-gray-400"></span>
+                    {!alert.isRead && (
+                      <button
+                        onClick={() => handleMarkAsRead(alert._id)}
+                        className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full transition-colors transform group-hover:scale-110"
+                      >
+                        Marquer comme lu
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+          );
+        })}
+      </div>
+    );
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "dashboard":
@@ -942,7 +966,7 @@ const User = () => {
           } shadow-md`}
         >
           <h1 className="text-xl font-bold text-blue-500 flex items-center gap-2">
-            <MapPin size={20} /> Météo Pro
+            <MapPin size={20} /> Alerte Météo
           </h1>
           <div className="flex items-center gap-2">
             <button
@@ -973,7 +997,7 @@ const User = () => {
           <div className="flex flex-col h-full">
             <div className="hidden md:flex justify-between items-center mb-6">
               <h1 className="text-xl md:text-2xl font-bold text-blue-500 flex items-center gap-2 hover:text-blue-600 transition-colors duration-200">
-                <MapPin size={20} /> Météo Pro
+                <MapPin size={20} /> Alerte Météo
               </h1>
               <button
                 onClick={() => setDarkMode(!darkMode)}

@@ -5,13 +5,13 @@ const {
 const alertController = require("./controllers/alertController");
 
 // Exécuter chaque jour à 10h30 du matin pour ajouter le jour suivant
-cron.schedule("37 10 * * *", () => {
+cron.schedule("17 9 * * *", () => {
   console.log("⏰ Exécution du cron job pour ajouter le jour suivant à 10h30");
   addNextDayForecast();
 });
 
 // Vérifier les alertes toutes les heures
-cron.schedule("31 18 * * *", async () => {
+cron.schedule("46 16 * * *", async () => {
   console.log("Vérification des alertes météo...");
   await alertController.checkAndSendAlerts();
 });

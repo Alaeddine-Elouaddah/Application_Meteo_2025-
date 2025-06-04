@@ -35,7 +35,7 @@ const triggeredAlertSchema = new mongoose.Schema({
   severity: {
     type: String,
     required: false,
-    enum: ["Danger", "Warning", "Information"],
+    enum: ["Danger", "Avertissement", "Information"],
   },
   alertValue: {
     type: Number,
